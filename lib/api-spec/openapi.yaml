@@ -1,22 +1,28 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Wordbox API - English vocabulary learning platform
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: words
+    description: Vocabulary word operations
+  - name: progress
+    description: User progress tracking
+  - name: games
+    description: Game sessions and scores
+  - name: stats
+    description: Learning statistics
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +30,377 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /words:
+    get:
+      operationId: listWords
+      tags: [words]
+      summary: List vocabulary words, optionally filtered by level
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [A1, A2, B1, B2, C1, C2]
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of words
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Word"
+
+  /words/{id}:
+    get:
+      operationId: getWord
+      tags: [words]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Word detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Word"
+        "404":
+          description: Not found
+
+  /words/{id}/progress:
+    post:
+      operationId: markWordProgress
+      tags: [progress]
+      summary: Record that user learned or practiced a word
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgressInput"
+      responses:
+        "200":
+          description: Updated progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WordProgress"
+
+  /progress:
+    get:
+      operationId: listProgress
+      tags: [progress]
+      summary: Get all word progress for the user
+      responses:
+        "200":
+          description: Progress list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WordProgress"
+
+  /games/sessions:
+    get:
+      operationId: listGameSessions
+      tags: [games]
+      summary: Get recent game sessions
+      responses:
+        "200":
+          description: Sessions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GameSession"
+    post:
+      operationId: createGameSession
+      tags: [games]
+      summary: Save a completed game session score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameSessionInput"
+      responses:
+        "201":
+          description: Session saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameSession"
+
+  /games/crossword:
+    get:
+      operationId: getCrosswordPuzzle
+      tags: [games]
+      summary: Generate a crossword puzzle for a given level
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [A1, A2, B1, B2, C1, C2]
+      responses:
+        "200":
+          description: Crossword puzzle data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrosswordPuzzle"
+
+  /games/quiz:
+    get:
+      operationId: getQuizWords
+      tags: [games]
+      summary: Get words for a quiz session
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [A1, A2, B1, B2, C1, C2]
+        - name: count
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Quiz words with distractors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizQuestion"
+
+  /stats/summary:
+    get:
+      operationId: getStatsSummary
+      tags: [stats]
+      summary: Get learning summary stats
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsSummary"
+
+  /stats/levels:
+    get:
+      operationId: getLevelStats
+      tags: [stats]
+      summary: Get progress breakdown by level
+      responses:
+        "200":
+          description: Level breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LevelStat"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    Word:
+      type: object
+      required: [id, word, translation, level, category]
+      properties:
+        id:
+          type: integer
+        word:
+          type: string
+        translation:
+          type: string
+          description: Uzbek translation
+        level:
+          type: string
+          enum: [A1, A2, B1, B2, C1, C2]
+        category:
+          type: string
+        exampleSentence:
+          type: ["string", "null"]
+        exampleTranslation:
+          type: ["string", "null"]
+        phonetic:
+          type: ["string", "null"]
+
+    WordProgress:
+      type: object
+      required: [wordId, learned, practiceCount, score]
+      properties:
+        wordId:
+          type: integer
+        learned:
+          type: boolean
+        practiceCount:
+          type: integer
+        score:
+          type: integer
+          description: 0-100 mastery score
+
+    ProgressInput:
+      type: object
+      required: [correct]
+      properties:
+        correct:
+          type: boolean
+        gameType:
+          type: ["string", "null"]
+
+    GameSession:
+      type: object
+      required: [id, gameType, level, score, totalQuestions, correctAnswers, createdAt]
+      properties:
+        id:
+          type: integer
+        gameType:
+          type: string
+          enum: [quiz, crossword, flashcard, matching, spelling]
+        level:
+          type: string
+          enum: [A1, A2, B1, B2, C1, C2]
+        score:
+          type: integer
+        totalQuestions:
+          type: integer
+        correctAnswers:
+          type: integer
+        createdAt:
+          type: string
+
+    GameSessionInput:
+      type: object
+      required: [gameType, level, score, totalQuestions, correctAnswers]
+      properties:
+        gameType:
+          type: string
+          enum: [quiz, crossword, flashcard, matching, spelling]
+        level:
+          type: string
+          enum: [A1, A2, B1, B2, C1, C2]
+        score:
+          type: integer
+        totalQuestions:
+          type: integer
+        correctAnswers:
+          type: integer
+
+    CrosswordClue:
+      type: object
+      required: [number, direction, clue, answer, row, col, length]
+      properties:
+        number:
+          type: integer
+        direction:
+          type: string
+          enum: [across, down]
+        clue:
+          type: string
+          description: Uzbek translation as clue
+        answer:
+          type: string
+          description: English word as answer
+        row:
+          type: integer
+        col:
+          type: integer
+        length:
+          type: integer
+
+    CrosswordPuzzle:
+      type: object
+      required: [grid, clues, level]
+      properties:
+        grid:
+          type: array
+          items:
+            type: array
+            items:
+              type: ["string", "null"]
+        clues:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrosswordClue"
+        level:
+          type: string
+
+    QuizQuestion:
+      type: object
+      required: [wordId, word, correctAnswer, options]
+      properties:
+        wordId:
+          type: integer
+        word:
+          type: string
+          description: English word to translate
+        correctAnswer:
+          type: string
+          description: Correct Uzbek translation
+        options:
+          type: array
+          items:
+            type: string
+          description: 4 options including correct answer
+
+    StatsSummary:
+      type: object
+      required: [totalWords, learnedWords, totalSessions, averageScore, streakDays, totalXp]
+      properties:
+        totalWords:
+          type: integer
+        learnedWords:
+          type: integer
+        totalSessions:
+          type: integer
+        averageScore:
+          type: integer
+        streakDays:
+          type: integer
+        totalXp:
+          type: integer
+
+    LevelStat:
+      type: object
+      required: [level, totalWords, learnedWords, percentage]
+      properties:
+        level:
+          type: string
+        totalWords:
+          type: integer
+        learnedWords:
+          type: integer
+        percentage:
+          type: integer
