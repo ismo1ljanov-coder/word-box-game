@@ -9,6 +9,7 @@ import achievementsRouter from "./achievements";
 import challengesRouter from "./challenges";
 import leaderboardRouter from "./leaderboard";
 import dailyRewardRouter from "./daily-reward";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(achievementsRouter);
 router.use(challengesRouter);
 router.use(leaderboardRouter);
 router.use(dailyRewardRouter);
+router.use(adminRouter);
 
 export default router;

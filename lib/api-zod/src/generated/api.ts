@@ -490,3 +490,268 @@ export const GetDailyRewardStatusResponse = zod.object({
 })
 
 
+/**
+ * @summary Get admin dashboard stats
+ */
+export const GetAdminDashboardResponse = zod.object({
+  "totalUsers": zod.number(),
+  "activeToday": zod.number(),
+  "premiumUsers": zod.number(),
+  "bannedUsers": zod.number(),
+  "totalWords": zod.number(),
+  "sessionsToday": zod.number(),
+  "totalSessions": zod.number(),
+  "masteredWords": zod.number()
+})
+
+
+/**
+ * @summary List all users (paginated)
+ */
+export const listAdminUsersQueryPageDefault = 1;
+export const listAdminUsersQueryPageSizeDefault = 20;
+
+export const ListAdminUsersQueryParams = zod.object({
+  "page": zod.coerce.number().default(listAdminUsersQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listAdminUsersQueryPageSizeDefault),
+  "search": zod.coerce.string().optional()
+})
+
+export const ListAdminUsersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "fullName": zod.string(),
+  "subscriptionTier": zod.enum(['free', 'premium', 'pro']),
+  "isAdmin": zod.boolean(),
+  "isBanned": zod.boolean(),
+  "streakDays": zod.number(),
+  "totalXp": zod.number(),
+  "totalCoins": zod.number(),
+  "createdAt": zod.string().nullish(),
+  "lastActiveAt": zod.string().nullish()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Get a user by ID
+ */
+export const GetAdminUserParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetAdminUserResponse = zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "fullName": zod.string(),
+  "subscriptionTier": zod.enum(['free', 'premium', 'pro']),
+  "isAdmin": zod.boolean(),
+  "isBanned": zod.boolean(),
+  "streakDays": zod.number(),
+  "totalXp": zod.number(),
+  "totalCoins": zod.number(),
+  "createdAt": zod.string().nullish(),
+  "lastActiveAt": zod.string().nullish()
+}).and(zod.object({
+  "longestStreak": zod.number().optional(),
+  "dailyGoalTarget": zod.number().optional(),
+  "totalSessions": zod.number().optional(),
+  "learnedWords": zod.number().optional()
+}))
+
+
+/**
+ * @summary Update a user
+ */
+export const UpdateAdminUserParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminUserBody = zod.object({
+  "fullName": zod.string().optional(),
+  "subscriptionTier": zod.enum(['free', 'premium', 'pro']).optional(),
+  "isAdmin": zod.boolean().optional()
+})
+
+export const UpdateAdminUserResponse = zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "fullName": zod.string(),
+  "subscriptionTier": zod.enum(['free', 'premium', 'pro']),
+  "isAdmin": zod.boolean(),
+  "isBanned": zod.boolean(),
+  "streakDays": zod.number(),
+  "totalXp": zod.number(),
+  "totalCoins": zod.number(),
+  "createdAt": zod.string().nullish(),
+  "lastActiveAt": zod.string().nullish()
+}).and(zod.object({
+  "longestStreak": zod.number().optional(),
+  "dailyGoalTarget": zod.number().optional(),
+  "totalSessions": zod.number().optional(),
+  "learnedWords": zod.number().optional()
+}))
+
+
+/**
+ * @summary Delete a user
+ */
+export const DeleteAdminUserParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteAdminUserResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Toggle ban status for a user
+ */
+export const BanAdminUserParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const BanAdminUserResponse = zod.object({
+  "id": zod.number(),
+  "isBanned": zod.boolean()
+})
+
+
+/**
+ * @summary Reset all word progress and game sessions for a user
+ */
+export const ResetAdminUserProgressParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ResetAdminUserProgressResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Set subscription tier for a user
+ */
+export const GrantAdminUserPremiumParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GrantAdminUserPremiumBody = zod.object({
+  "tier": zod.enum(['free', 'premium', 'pro'])
+})
+
+export const GrantAdminUserPremiumResponse = zod.object({
+  "id": zod.number(),
+  "subscriptionTier": zod.string()
+})
+
+
+/**
+ * @summary Get platform analytics
+ */
+export const GetAdminAnalyticsResponse = zod.object({
+  "dau": zod.number(),
+  "wau": zod.number(),
+  "mau": zod.number(),
+  "dauTrend": zod.array(zod.object({
+  "date": zod.string(),
+  "count": zod.number()
+})),
+  "topLearned": zod.array(zod.object({
+  "wordId": zod.number(),
+  "word": zod.string(),
+  "translation": zod.string(),
+  "level": zod.string(),
+  "count": zod.number()
+})),
+  "hardestWords": zod.array(zod.object({
+
+}).passthrough()),
+  "levelRates": zod.array(zod.object({
+
+}).passthrough()),
+  "avgSessionScore": zod.number(),
+  "avgCorrectRate": zod.number()
+})
+
+
+/**
+ * @summary List all words (admin, paginated)
+ */
+export const listAdminWordsQueryPageDefault = 1;
+export const listAdminWordsQueryPageSizeDefault = 50;
+
+export const ListAdminWordsQueryParams = zod.object({
+  "page": zod.coerce.number().default(listAdminWordsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listAdminWordsQueryPageSizeDefault),
+  "search": zod.coerce.string().optional(),
+  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).optional()
+})
+
+export const ListAdminWordsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "word": zod.string(),
+  "translation": zod.string().describe('Uzbek translation'),
+  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
+  "category": zod.string(),
+  "partOfSpeech": zod.string().nullish(),
+  "exampleSentence": zod.string().nullish(),
+  "exampleTranslation": zod.string().nullish(),
+  "phonetic": zod.string().nullish()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Update a word
+ */
+export const UpdateAdminWordParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminWordBody = zod.object({
+  "word": zod.string().optional(),
+  "translation": zod.string().optional(),
+  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).optional(),
+  "category": zod.string().optional(),
+  "partOfSpeech": zod.string().optional(),
+  "exampleSentence": zod.string().optional(),
+  "exampleTranslation": zod.string().optional(),
+  "phonetic": zod.string().optional()
+})
+
+export const UpdateAdminWordResponse = zod.object({
+  "id": zod.number(),
+  "word": zod.string(),
+  "translation": zod.string().describe('Uzbek translation'),
+  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
+  "category": zod.string(),
+  "partOfSpeech": zod.string().nullish(),
+  "exampleSentence": zod.string().nullish(),
+  "exampleTranslation": zod.string().nullish(),
+  "phonetic": zod.string().nullish()
+})
+
+
+/**
+ * @summary Import words from CSV
+ */
+export const ImportAdminWordsCsvResponse = zod.object({
+  "imported": zod.number(),
+  "skipped": zod.number(),
+  "errors": zod.array(zod.object({
+  "row": zod.number().optional(),
+  "error": zod.string().optional()
+}))
+})
+
+

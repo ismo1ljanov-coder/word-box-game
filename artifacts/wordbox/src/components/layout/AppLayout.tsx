@@ -1,12 +1,14 @@
 import { Link, useLocation } from "wouter";
-import { BookOpen, Gamepad2, Home, BarChart3, User, Heart, Crown, Trophy } from "lucide-react";
+import { BookOpen, Gamepad2, Home, BarChart3, User, Heart, Crown, Trophy, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGetStatsSummary } from "@workspace/api-client-react";
 import DailyRewardModal from "@/components/DailyRewardModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: stats } = useGetStatsSummary();
+  const { user } = useAuth();
 
   const navItems = [
     { href: "/", icon: Home, label: "Asosiy" },
@@ -65,6 +67,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="hidden md:flex flex-col gap-2 px-4 mt-4">
+          {user?.isAdmin && (
+            <Link href="/admin">
+              <div className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm",
+                location.startsWith("/admin") ? "bg-destructive/10 text-destructive" : "text-muted-foreground hover:bg-muted/50"
+              )}>
+                <Shield className="w-5 h-5" />
+                <span>Admin Panel</span>
+              </div>
+            </Link>
+          )}
           <Link href="/leaderboard">
             <div className={cn(
               "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm",

@@ -3,8 +3,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "@/components/layout/AppLayout";
+import AdminLayout, { AdminRoute } from "@/components/layout/AdminLayout";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import AdminDashboard from "@/pages/admin/index";
+import AdminUsers from "@/pages/admin/users";
+import AdminWords from "@/pages/admin/words";
+import AdminAnalytics from "@/pages/admin/analytics";
 
 import Dashboard from "@/pages/dashboard";
 import Words from "@/pages/words";
@@ -74,6 +79,19 @@ function Router() {
       </Route>
       <Route path="/forgot-password">
         <PublicOnly><ForgotPasswordPage /></PublicOnly>
+      </Route>
+      <Route path="/admin/:rest*">
+        <AdminRoute>
+          <AdminLayout>
+            <Switch>
+              <Route path="/admin" component={AdminDashboard} />
+              <Route path="/admin/users" component={AdminUsers} />
+              <Route path="/admin/words" component={AdminWords} />
+              <Route path="/admin/analytics" component={AdminAnalytics} />
+              <Route component={NotFound} />
+            </Switch>
+          </AdminLayout>
+        </AdminRoute>
       </Route>
       <Route>
         <AuthGate>

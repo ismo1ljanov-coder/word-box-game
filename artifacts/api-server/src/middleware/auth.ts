@@ -4,6 +4,16 @@ import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { User } from "@workspace/db";
 
+// Update lastActiveAt at most once per 5 minutes per user (fire-and-forget)
+const lastActiveCache = new Map<number, number>();
+function touchLastActive(userId: number) {
+  const now = Date.now();
+  const last = lastActiveCache.get(userId) ?? 0;
+  if (now - last < 5 * 60 * 1000) return;
+  lastActiveCache.set(userId, now);
+  db.update(usersTable).set({ lastActiveAt: new Date() }).where(eq(usersTable.id, userId)).catch(() => {});
+}
+
 declare module "express-session" {
   interface SessionData {
     userId: number;
@@ -33,6 +43,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 
   req.user = user;
+  touchLastActive(user.id);
   next();
 }
 

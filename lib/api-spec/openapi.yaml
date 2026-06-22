@@ -27,6 +27,8 @@ tags:
     description: Leaderboard rankings
   - name: profile
     description: User profile management
+  - name: admin
+    description: Admin panel operations
 paths:
   /healthz:
     get:
@@ -581,6 +583,294 @@ paths:
               schema:
                 $ref: "#/components/schemas/DailyRewardStatusResult"
 
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Get admin dashboard stats
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+        "403":
+          description: Admin required
+
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List all users (paginated)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserListResponse"
+
+  /admin/users/{id}:
+    get:
+      operationId: getAdminUser
+      tags: [admin]
+      summary: Get a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+    put:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Update a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateUserInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+    delete:
+      operationId: deleteAdminUser
+      tags: [admin]
+      summary: Delete a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+
+  /admin/users/{id}/ban:
+    post:
+      operationId: banAdminUser
+      tags: [admin]
+      summary: Toggle ban status for a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ban toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, isBanned]
+                properties:
+                  id:
+                    type: integer
+                  isBanned:
+                    type: boolean
+
+  /admin/users/{id}/reset-progress:
+    post:
+      operationId: resetAdminUserProgress
+      tags: [admin]
+      summary: Reset all word progress and game sessions for a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Progress reset
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+
+  /admin/users/{id}/grant-premium:
+    post:
+      operationId: grantAdminUserPremium
+      tags: [admin]
+      summary: Set subscription tier for a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGrantPremiumInput"
+      responses:
+        "200":
+          description: Tier updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, subscriptionTier]
+                properties:
+                  id:
+                    type: integer
+                  subscriptionTier:
+                    type: string
+
+  /admin/analytics:
+    get:
+      operationId: getAdminAnalytics
+      tags: [admin]
+      summary: Get platform analytics
+      responses:
+        "200":
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAnalytics"
+
+  /admin/words:
+    get:
+      operationId: listAdminWords
+      tags: [admin]
+      summary: List all words (admin, paginated)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [A1, A2, B1, B2, C1, C2]
+      responses:
+        "200":
+          description: Word list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWordListResponse"
+
+  /admin/words/{id}:
+    put:
+      operationId: updateAdminWord
+      tags: [admin]
+      summary: Update a word
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateWordInput"
+      responses:
+        "200":
+          description: Updated word
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Word"
+
+  /admin/words/export-csv:
+    get:
+      operationId: exportAdminWordsCsv
+      tags: [admin]
+      summary: Export all words as CSV
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /admin/words/import-csv:
+    post:
+      operationId: importAdminWordsCsv
+      tags: [admin]
+      summary: Import words from CSV
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCsvImportResult"
+
 components:
   schemas:
     HealthStatus:
@@ -1053,3 +1343,209 @@ components:
               type: integer
             xp:
               type: integer
+
+    AdminDashboard:
+      type: object
+      required: [totalUsers, activeToday, premiumUsers, bannedUsers, totalWords, sessionsToday, totalSessions, masteredWords]
+      properties:
+        totalUsers:
+          type: integer
+        activeToday:
+          type: integer
+        premiumUsers:
+          type: integer
+        bannedUsers:
+          type: integer
+        totalWords:
+          type: integer
+        sessionsToday:
+          type: integer
+        totalSessions:
+          type: integer
+        masteredWords:
+          type: integer
+
+    AdminUserSummary:
+      type: object
+      required: [id, phone, fullName, subscriptionTier, isAdmin, isBanned, streakDays, totalXp, totalCoins]
+      properties:
+        id:
+          type: integer
+        phone:
+          type: string
+        fullName:
+          type: string
+        subscriptionTier:
+          type: string
+          enum: [free, premium, pro]
+        isAdmin:
+          type: boolean
+        isBanned:
+          type: boolean
+        streakDays:
+          type: integer
+        totalXp:
+          type: integer
+        totalCoins:
+          type: integer
+        createdAt:
+          type: ["string", "null"]
+        lastActiveAt:
+          type: ["string", "null"]
+
+    AdminUserDetail:
+      allOf:
+        - $ref: "#/components/schemas/AdminUserSummary"
+        - type: object
+          properties:
+            longestStreak:
+              type: integer
+            dailyGoalTarget:
+              type: integer
+            totalSessions:
+              type: integer
+            learnedWords:
+              type: integer
+
+    AdminUserListResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUserSummary"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    AdminUpdateUserInput:
+      type: object
+      properties:
+        fullName:
+          type: string
+        subscriptionTier:
+          type: string
+          enum: [free, premium, pro]
+        isAdmin:
+          type: boolean
+
+    AdminGrantPremiumInput:
+      type: object
+      required: [tier]
+      properties:
+        tier:
+          type: string
+          enum: [free, premium, pro]
+
+    AdminAnalyticsTrendDay:
+      type: object
+      required: [date, count]
+      properties:
+        date:
+          type: string
+        count:
+          type: integer
+
+    AdminAnalyticsWordStat:
+      type: object
+      required: [wordId, word, translation, level, count]
+      properties:
+        wordId:
+          type: integer
+        word:
+          type: string
+        translation:
+          type: string
+        level:
+          type: string
+        count:
+          type: integer
+
+    AdminAnalytics:
+      type: object
+      required: [dau, wau, mau, dauTrend, topLearned, hardestWords, levelRates, avgSessionScore, avgCorrectRate]
+      properties:
+        dau:
+          type: integer
+        wau:
+          type: integer
+        mau:
+          type: integer
+        dauTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAnalyticsTrendDay"
+        topLearned:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAnalyticsWordStat"
+        hardestWords:
+          type: array
+          items:
+            type: object
+        levelRates:
+          type: array
+          items:
+            type: object
+        avgSessionScore:
+          type: integer
+        avgCorrectRate:
+          type: integer
+
+    AdminWordListResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Word"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    AdminUpdateWordInput:
+      type: object
+      properties:
+        word:
+          type: string
+        translation:
+          type: string
+        level:
+          type: string
+          enum: [A1, A2, B1, B2, C1, C2]
+        category:
+          type: string
+        partOfSpeech:
+          type: string
+        exampleSentence:
+          type: string
+        exampleTranslation:
+          type: string
+        phonetic:
+          type: string
+
+    AdminCsvImportResult:
+      type: object
+      required: [imported, skipped, errors]
+      properties:
+        imported:
+          type: integer
+        skipped:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              row:
+                type: integer
+              error:
+                type: string

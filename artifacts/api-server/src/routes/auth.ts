@@ -97,6 +97,11 @@ router.post("/auth/login", async (req, res) => {
     return;
   }
 
+  if (user.isBanned) {
+    res.status(403).json({ error: "Hisobingiz bloklangan. Qo'llab-quvvatlash xizmatiga murojaat qiling." });
+    return;
+  }
+
   req.session.userId = user.id;
 
   if (rememberMe) {

@@ -364,6 +364,154 @@ export interface DailyRewardStatusResult {
   reward?: DailyRewardStatusResultReward;
 }
 
+export interface AdminDashboard {
+  totalUsers: number;
+  activeToday: number;
+  premiumUsers: number;
+  bannedUsers: number;
+  totalWords: number;
+  sessionsToday: number;
+  totalSessions: number;
+  masteredWords: number;
+}
+
+export type AdminUserSummarySubscriptionTier = typeof AdminUserSummarySubscriptionTier[keyof typeof AdminUserSummarySubscriptionTier];
+
+
+export const AdminUserSummarySubscriptionTier = {
+  free: 'free',
+  premium: 'premium',
+  pro: 'pro',
+} as const;
+
+export interface AdminUserSummary {
+  id: number;
+  phone: string;
+  fullName: string;
+  subscriptionTier: AdminUserSummarySubscriptionTier;
+  isAdmin: boolean;
+  isBanned: boolean;
+  streakDays: number;
+  totalXp: number;
+  totalCoins: number;
+  /** @nullable */
+  createdAt?: string | null;
+  /** @nullable */
+  lastActiveAt?: string | null;
+}
+
+export type AdminUserDetail = AdminUserSummary & {
+  longestStreak?: number;
+  dailyGoalTarget?: number;
+  totalSessions?: number;
+  learnedWords?: number;
+};
+
+export interface AdminUserListResponse {
+  items: AdminUserSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export type AdminUpdateUserInputSubscriptionTier = typeof AdminUpdateUserInputSubscriptionTier[keyof typeof AdminUpdateUserInputSubscriptionTier];
+
+
+export const AdminUpdateUserInputSubscriptionTier = {
+  free: 'free',
+  premium: 'premium',
+  pro: 'pro',
+} as const;
+
+export interface AdminUpdateUserInput {
+  fullName?: string;
+  subscriptionTier?: AdminUpdateUserInputSubscriptionTier;
+  isAdmin?: boolean;
+}
+
+export type AdminGrantPremiumInputTier = typeof AdminGrantPremiumInputTier[keyof typeof AdminGrantPremiumInputTier];
+
+
+export const AdminGrantPremiumInputTier = {
+  free: 'free',
+  premium: 'premium',
+  pro: 'pro',
+} as const;
+
+export interface AdminGrantPremiumInput {
+  tier: AdminGrantPremiumInputTier;
+}
+
+export interface AdminAnalyticsTrendDay {
+  date: string;
+  count: number;
+}
+
+export interface AdminAnalyticsWordStat {
+  wordId: number;
+  word: string;
+  translation: string;
+  level: string;
+  count: number;
+}
+
+export type AdminAnalyticsHardestWordsItem = { [key: string]: unknown };
+
+export type AdminAnalyticsLevelRatesItem = { [key: string]: unknown };
+
+export interface AdminAnalytics {
+  dau: number;
+  wau: number;
+  mau: number;
+  dauTrend: AdminAnalyticsTrendDay[];
+  topLearned: AdminAnalyticsWordStat[];
+  hardestWords: AdminAnalyticsHardestWordsItem[];
+  levelRates: AdminAnalyticsLevelRatesItem[];
+  avgSessionScore: number;
+  avgCorrectRate: number;
+}
+
+export interface AdminWordListResponse {
+  items: Word[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export type AdminUpdateWordInputLevel = typeof AdminUpdateWordInputLevel[keyof typeof AdminUpdateWordInputLevel];
+
+
+export const AdminUpdateWordInputLevel = {
+  A1: 'A1',
+  A2: 'A2',
+  B1: 'B1',
+  B2: 'B2',
+  C1: 'C1',
+  C2: 'C2',
+} as const;
+
+export interface AdminUpdateWordInput {
+  word?: string;
+  translation?: string;
+  level?: AdminUpdateWordInputLevel;
+  category?: string;
+  partOfSpeech?: string;
+  exampleSentence?: string;
+  exampleTranslation?: string;
+  phonetic?: string;
+}
+
+export type AdminCsvImportResultErrorsItem = {
+  row?: number;
+  error?: string;
+};
+
+export interface AdminCsvImportResult {
+  imported: number;
+  skipped: number;
+  errors: AdminCsvImportResultErrorsItem[];
+}
+
 export type Logout200 = {
   ok: boolean;
 };
@@ -421,6 +569,49 @@ export type GetCrosswordPuzzleLevel = typeof GetCrosswordPuzzleLevel[keyof typeo
 
 
 export const GetCrosswordPuzzleLevel = {
+  A1: 'A1',
+  A2: 'A2',
+  B1: 'B1',
+  B2: 'B2',
+  C1: 'C1',
+  C2: 'C2',
+} as const;
+
+export type ListAdminUsersParams = {
+page?: number;
+pageSize?: number;
+search?: string;
+};
+
+export type DeleteAdminUser200 = {
+  ok: boolean;
+};
+
+export type BanAdminUser200 = {
+  id: number;
+  isBanned: boolean;
+};
+
+export type ResetAdminUserProgress200 = {
+  ok: boolean;
+};
+
+export type GrantAdminUserPremium200 = {
+  id: number;
+  subscriptionTier: string;
+};
+
+export type ListAdminWordsParams = {
+page?: number;
+pageSize?: number;
+search?: string;
+level?: ListAdminWordsLevel;
+};
+
+export type ListAdminWordsLevel = typeof ListAdminWordsLevel[keyof typeof ListAdminWordsLevel];
+
+
+export const ListAdminWordsLevel = {
   A1: 'A1',
   A2: 'A2',
   B1: 'B1',

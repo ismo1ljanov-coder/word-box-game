@@ -17,6 +17,8 @@ export const usersTable = pgTable("users", {
   totalXp: integer("total_xp").notNull().default(0),
   totalCoins: integer("total_coins").notNull().default(0),
   dailyGoalTarget: integer("daily_goal_target").notNull().default(20),
+  isBanned: boolean("is_banned").notNull().default(false),
+  lastActiveAt: timestamp("last_active_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
