@@ -4,7 +4,7 @@ import { wordsTable, wordProgressTable } from "@workspace/db";
 import { ListWordsQueryParams, GetWordParams, MarkWordProgressParams, MarkWordProgressBody, ToggleFavoriteParams } from "@workspace/api-zod";
 import { eq, and, ilike, sql } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
-import { recordActivity, checkAndAwardAchievements } from "../lib/activity";
+import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
 
 const router = Router();
 
@@ -204,6 +204,9 @@ router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
   }
 
   await recordActivity(userId);
+  // Award 10 XP per correct answer here (single source of truth per answer).
+  // Games session completion awards only a +5 bonus (no per-answer XP there).
+  if (correct) await awardXp(userId, 10, 0);
   await checkAndAwardAchievements(userId);
 
   res.json(result);

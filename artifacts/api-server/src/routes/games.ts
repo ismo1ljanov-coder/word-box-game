@@ -45,7 +45,9 @@ router.post("/games/sessions", requireAuth, async (req, res) => {
     .values({ ...parsed.data, userId, coinsEarned })
     .returning();
 
-  const xpEarned = parsed.data.correctAnswers * 10 + 5;
+  // XP per correct answer is awarded in words/:wordId/progress (10 XP each).
+  // Game session awards only the 5 XP completion bonus to avoid double-counting.
+  const xpEarned = 5;
   await recordActivity(userId);
   await awardXp(userId, xpEarned, coinsEarned);
   await checkAndAwardAchievements(userId);
