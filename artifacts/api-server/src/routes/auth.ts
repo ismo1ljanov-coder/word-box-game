@@ -169,7 +169,14 @@ router.post("/auth/forgot-password", async (req, res) => {
 
   await db.insert(passwordResetCodesTable).values({ phone, code, expiresAt });
 
-  res.json({ ok: true, code, message: "Tasdiqlash kodi yuborildi (dev: kod javobda keladi)" });
+  const isDev = process.env.NODE_ENV !== "production";
+  res.json({
+    ok: true,
+    ...(isDev && { code }),
+    message: isDev
+      ? "Tasdiqlash kodi yuborildi (dev: kod javobda keladi)"
+      : "Tasdiqlash kodi yuborildi",
+  });
 });
 
 router.post("/auth/reset-password", async (req, res) => {
