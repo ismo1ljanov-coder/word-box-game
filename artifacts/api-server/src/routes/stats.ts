@@ -103,4 +103,21 @@ router.get("/stats/levels", requireAuth, async (req, res) => {
   res.json(results);
 });
 
+router.get("/stats/activity", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - 363);
+  since.setUTCHours(0, 0, 0, 0);
+
+  const rows = await db.execute(sql`
+    SELECT DATE(created_at AT TIME ZONE 'UTC')::text AS date, COUNT(*)::int AS count
+    FROM game_sessions
+    WHERE user_id = ${userId} AND created_at >= ${since}
+    GROUP BY DATE(created_at AT TIME ZONE 'UTC')
+    ORDER BY date
+  `);
+
+  res.json(rows.rows);
+});
+
 export default router;

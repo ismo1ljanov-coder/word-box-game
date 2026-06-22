@@ -4,7 +4,7 @@ import { wordsTable, wordProgressTable } from "@workspace/db";
 import { ListWordsQueryParams, GetWordParams, MarkWordProgressParams, MarkWordProgressBody, ToggleFavoriteParams } from "@workspace/api-zod";
 import { eq, and, ilike, sql } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
-import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
+import { recordActivity, checkAndAwardAchievements } from "../lib/activity";
 
 const router = Router();
 
@@ -168,13 +168,11 @@ router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
     .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)));
 
   let result;
-  let wasNewlyLearned = false;
 
   if (existing) {
     const newScore = correct ? Math.min(100, existing.score + 10) : Math.max(0, existing.score - 5);
     const newCount = existing.practiceCount + 1;
     const learned = newScore >= 70;
-    wasNewlyLearned = learned && !existing.learned;
 
     const [updated] = await db
       .update(wordProgressTable)
@@ -206,10 +204,6 @@ router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
   }
 
   await recordActivity(userId);
-  if (correct) {
-    const xpGain = wasNewlyLearned ? 20 : 5;
-    await awardXp(userId, xpGain, wasNewlyLearned ? 5 : 0);
-  }
   await checkAndAwardAchievements(userId);
 
   res.json(result);

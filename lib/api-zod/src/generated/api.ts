@@ -334,6 +334,16 @@ export const GetStatsSummaryResponse = zod.object({
 
 
 /**
+ * @summary Get daily activity counts for the last 52 weeks
+ */
+export const GetActivityHistoryResponseItem = zod.object({
+  "date": zod.string(),
+  "count": zod.number()
+})
+export const GetActivityHistoryResponse = zod.array(GetActivityHistoryResponseItem)
+
+
+/**
  * @summary Get per-CEFR-level progress
  */
 export const GetLevelStatsResponseItem = zod.object({

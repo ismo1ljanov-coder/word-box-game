@@ -8,6 +8,7 @@
 
 export * from './achievement';
 export * from './achievementFull';
+export * from './activityDay';
 export * from './authUser';
 export * from './authUserSubscriptionTier';
 export * from './challengeCompletionResult';

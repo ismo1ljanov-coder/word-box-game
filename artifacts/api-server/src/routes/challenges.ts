@@ -62,6 +62,33 @@ function getPeriodKey(challengeId: string): string {
   }
 }
 
+async function getDailyProgress(userId: number, target: number) {
+  const today = startOfDay();
+  const [row] = await db
+    .select({ count: sql<number>`count(distinct word_id)::int` })
+    .from(wordProgressTable)
+    .where(and(gte(wordProgressTable.updatedAt, today), eq(wordProgressTable.userId, userId)));
+  return { progress: Math.min(target, row.count), count: row.count };
+}
+
+async function getWeeklyProgress(userId: number, target: number) {
+  const weekStart = startOfWeek();
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(gameSessionsTable)
+    .where(and(gte(gameSessionsTable.createdAt, weekStart), eq(gameSessionsTable.userId, userId)));
+  return { progress: Math.min(target, row.count), count: row.count };
+}
+
+async function getMonthlyProgress(userId: number, target: number) {
+  const monthStart = startOfMonth();
+  const [row] = await db
+    .select({ count: sql<number>`count(distinct word_id)::int` })
+    .from(wordProgressTable)
+    .where(and(gte(wordProgressTable.updatedAt, monthStart), eq(wordProgressTable.userId, userId)));
+  return { progress: Math.min(target, row.count), count: row.count };
+}
+
 router.get("/challenges/daily", requireAuth, async (req, res) => {
   const userId = req.user!.id;
 
@@ -72,14 +99,7 @@ router.get("/challenges/daily", requireAuth, async (req, res) => {
     .limit(1);
 
   const target = userRow?.dailyGoalTarget ?? 20;
-  const today = startOfDay();
-
-  const [row] = await db
-    .select({ count: sql<number>`count(distinct word_id)::int` })
-    .from(wordProgressTable)
-    .where(and(gte(wordProgressTable.updatedAt, today), eq(wordProgressTable.userId, userId)));
-
-  const progress = Math.min(target, row.count);
+  const { progress, count } = await getDailyProgress(userId, target);
   const periodKey = getPeriodKey("daily");
   const [claimed] = await db.select().from(dailyRewardsTable)
     .where(and(eq(dailyRewardsTable.userId, userId), eq(dailyRewardsTable.claimedDate, periodKey))).limit(1);
@@ -91,7 +111,7 @@ router.get("/challenges/daily", requireAuth, async (req, res) => {
     type: "daily",
     target,
     progress,
-    completed: row.count >= target,
+    completed: count >= target,
     rewardClaimed: !!claimed,
     reward: { coins: 20, xp: 50 },
     expiresAt: endOfDay().toISOString(),
@@ -100,15 +120,8 @@ router.get("/challenges/daily", requireAuth, async (req, res) => {
 
 router.get("/challenges/weekly", requireAuth, async (req, res) => {
   const userId = req.user!.id;
-  const weekStart = startOfWeek();
   const target = 10;
-
-  const [row] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(gameSessionsTable)
-    .where(and(gte(gameSessionsTable.createdAt, weekStart), eq(gameSessionsTable.userId, userId)));
-
-  const progress = Math.min(target, row.count);
+  const { progress, count } = await getWeeklyProgress(userId, target);
   const periodKey = getPeriodKey("weekly");
   const [claimed] = await db.select().from(dailyRewardsTable)
     .where(and(eq(dailyRewardsTable.userId, userId), eq(dailyRewardsTable.claimedDate, periodKey))).limit(1);
@@ -120,7 +133,7 @@ router.get("/challenges/weekly", requireAuth, async (req, res) => {
     type: "weekly",
     target,
     progress,
-    completed: row.count >= target,
+    completed: count >= target,
     rewardClaimed: !!claimed,
     reward: { coins: 100, xp: 200 },
     expiresAt: endOfWeek().toISOString(),
@@ -129,15 +142,8 @@ router.get("/challenges/weekly", requireAuth, async (req, res) => {
 
 router.get("/challenges/monthly", requireAuth, async (req, res) => {
   const userId = req.user!.id;
-  const monthStart = startOfMonth();
   const target = 200;
-
-  const [row] = await db
-    .select({ count: sql<number>`count(distinct word_id)::int` })
-    .from(wordProgressTable)
-    .where(and(gte(wordProgressTable.updatedAt, monthStart), eq(wordProgressTable.userId, userId)));
-
-  const progress = Math.min(target, row.count);
+  const { progress, count } = await getMonthlyProgress(userId, target);
   const periodKey = getPeriodKey("monthly");
   const [claimed] = await db.select().from(dailyRewardsTable)
     .where(and(eq(dailyRewardsTable.userId, userId), eq(dailyRewardsTable.claimedDate, periodKey))).limit(1);
@@ -149,7 +155,7 @@ router.get("/challenges/monthly", requireAuth, async (req, res) => {
     type: "monthly",
     target,
     progress,
-    completed: row.count >= target,
+    completed: count >= target,
     rewardClaimed: !!claimed,
     reward: { coins: 500, xp: 1000 },
     expiresAt: endOfMonth().toISOString(),
@@ -165,6 +171,40 @@ router.post("/challenges/:challengeId/complete", requireAuth, async (req, res) =
     return;
   }
 
+  const rewards: Record<string, { coins: number; xp: number; target: number }> = {
+    daily: { coins: 20, xp: 50, target: 20 },
+    weekly: { coins: 100, xp: 200, target: 10 },
+    monthly: { coins: 500, xp: 1000, target: 200 },
+  };
+
+  const reward = rewards[challengeId]!;
+
+  const [userRow] = await db
+    .select({ dailyGoalTarget: usersTable.dailyGoalTarget })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+
+  const dailyTarget = userRow?.dailyGoalTarget ?? 20;
+  if (challengeId === "daily") reward.target = dailyTarget;
+
+  let completedCount = 0;
+  if (challengeId === "daily") {
+    const { count } = await getDailyProgress(userId, reward.target);
+    completedCount = count;
+  } else if (challengeId === "weekly") {
+    const { count } = await getWeeklyProgress(userId, reward.target);
+    completedCount = count;
+  } else {
+    const { count } = await getMonthlyProgress(userId, reward.target);
+    completedCount = count;
+  }
+
+  if (completedCount < reward.target) {
+    res.status(400).json({ error: "Musobaqa hali bajarilmadi", progress: completedCount, target: reward.target });
+    return;
+  }
+
   const periodKey = getPeriodKey(challengeId);
   const [existing] = await db
     .select()
@@ -176,13 +216,6 @@ router.post("/challenges/:challengeId/complete", requireAuth, async (req, res) =
     res.json({ alreadyClaimed: true, coinsEarned: existing.coinsEarned, xpEarned: 0 });
     return;
   }
-
-  const rewards: Record<string, { coins: number; xp: number }> = {
-    daily: { coins: 20, xp: 50 },
-    weekly: { coins: 100, xp: 200 },
-    monthly: { coins: 500, xp: 1000 },
-  };
-  const reward = rewards[challengeId]!;
 
   await db.insert(dailyRewardsTable).values({ userId, claimedDate: periodKey, coinsEarned: reward.coins });
   await awardXp(userId, reward.xp, reward.coins);

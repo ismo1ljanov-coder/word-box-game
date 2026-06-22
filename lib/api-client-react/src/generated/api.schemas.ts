@@ -327,6 +327,11 @@ export interface ChallengeProgress {
   expiresAt: string;
 }
 
+export interface ActivityDay {
+  date: string;
+  count: number;
+}
+
 export interface ChallengeCompletionResult {
   alreadyClaimed: boolean;
   coinsEarned: number;

@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { usersTable, wordProgressTable, gameSessionsTable, achievementsTable } from "@workspace/db";
+import { usersTable, wordProgressTable, gameSessionsTable, achievementsTable, wordsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 
 export const ACHIEVEMENT_DEFINITIONS = [
@@ -15,6 +15,12 @@ export const ACHIEVEMENT_DEFINITIONS = [
   { type: "coins_100", title: "Boylik", icon: "🪙", description: "100 ta tanga yig'dingiz" },
   { type: "perfect_score", title: "Mukammal", icon: "⭐", description: "O'yinda 100% natija" },
   { type: "speed_demon", title: "Tezkor", icon: "⚡", description: "Tezkor testni o'yndingiz" },
+  { type: "level_a1", title: "A1 Ustasi", icon: "🅰", description: "A1 darajasini to'liq o'rgandingiz" },
+  { type: "level_a2", title: "A2 Ustasi", icon: "✌", description: "A2 darajasini to'liq o'rgandingiz" },
+  { type: "level_b1", title: "B1 Ustasi", icon: "🔵", description: "B1 darajasini to'liq o'rgandingiz" },
+  { type: "level_b2", title: "B2 Ustasi", icon: "🟣", description: "B2 darajasini to'liq o'rgandingiz" },
+  { type: "level_c1", title: "C1 Ustasi", icon: "🏅", description: "C1 darajasini to'liq o'rgandingiz" },
+  { type: "level_c2", title: "C2 Ustasi", icon: "👑", description: "C2 darajasini to'liq o'rgandingiz" },
 ] as const;
 
 export type AchievementType = (typeof ACHIEVEMENT_DEFINITIONS)[number]["type"];
@@ -124,6 +130,22 @@ export async function checkAndAwardAchievements(userId: number): Promise<string[
     .from(gameSessionsTable)
     .where(and(eq(gameSessionsTable.userId, userId), eq(gameSessionsTable.gameType, "speed_quiz")));
 
+  const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
+  const levelCompletions: Record<string, boolean> = {};
+  for (const level of CEFR_LEVELS) {
+    const [total] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wordsTable)
+      .where(eq(wordsTable.level, level));
+    if (total.count === 0) { levelCompletions[level] = false; continue; }
+    const [learned] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wordProgressTable)
+      .innerJoin(wordsTable, eq(wordProgressTable.wordId, wordsTable.id))
+      .where(and(eq(wordProgressTable.learned, true), eq(wordsTable.level, level), eq(wordProgressTable.userId, userId)));
+    levelCompletions[level] = learned.count >= total.count;
+  }
+
   const existing = await db
     .select({ type: achievementsTable.type })
     .from(achievementsTable)
@@ -143,6 +165,12 @@ export async function checkAndAwardAchievements(userId: number): Promise<string[
     coins_100: user.totalCoins >= 100,
     perfect_score: perfectRow.count >= 1,
     speed_demon: speedRow.count >= 1,
+    level_a1: levelCompletions["A1"] ?? false,
+    level_a2: levelCompletions["A2"] ?? false,
+    level_b1: levelCompletions["B1"] ?? false,
+    level_b2: levelCompletions["B2"] ?? false,
+    level_c1: levelCompletions["C1"] ?? false,
+    level_c2: levelCompletions["C2"] ?? false,
   };
 
   const newlyUnlocked: string[] = [];
@@ -150,6 +178,9 @@ export async function checkAndAwardAchievements(userId: number): Promise<string[
     if (condition && !existingSet.has(type)) {
       await db.insert(achievementsTable).values({ userId, type });
       newlyUnlocked.push(type);
+      if (type.startsWith("level_")) {
+        await awardXp(userId, 50, 0);
+      }
     }
   }
 

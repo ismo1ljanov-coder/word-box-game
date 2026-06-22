@@ -22,6 +22,7 @@ import type {
 import type {
   Achievement,
   AchievementFull,
+  ActivityDay,
   AuthUser,
   ChallengeCompletionResult,
   ChallengeProgress,
@@ -1557,6 +1558,83 @@ export function useGetStatsSummary<TData = Awaited<ReturnType<typeof getStatsSum
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetStatsSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetActivityHistoryUrl = () => {
+
+
+
+
+  return `/api/stats/activity`
+}
+
+/**
+ * @summary Get daily activity counts for the last 52 weeks
+ */
+export const getActivityHistory = async ( options?: RequestInit): Promise<ActivityDay[]> => {
+
+  return customFetch<ActivityDay[]>(getGetActivityHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetActivityHistoryQueryKey = () => {
+    return [
+    `/api/stats/activity`
+    ] as const;
+    }
+
+
+export const getGetActivityHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getActivityHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivityHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetActivityHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityHistory>>> = ({ signal }) => getActivityHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActivityHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetActivityHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getActivityHistory>>>
+export type GetActivityHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get daily activity counts for the last 52 weeks
+ */
+
+export function useGetActivityHistory<TData = Awaited<ReturnType<typeof getActivityHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivityHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetActivityHistoryQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

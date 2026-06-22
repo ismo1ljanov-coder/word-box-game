@@ -9,7 +9,7 @@ import {
   useUpdateProfile,
   useChangePassword,
   useCompleteChallenge,
-  useGetGameSessions,
+  useGetActivityHistory,
 } from "@workspace/api-client-react";
 import type { UpdateProfileInputDailyGoalTarget, ChallengeProgress } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,7 +124,7 @@ export default function Profile() {
   const { data: dailyChallenge } = useGetDailyChallenge();
   const { data: weeklyChallenge } = useGetWeeklyChallenge();
   const { data: monthlyChallenge } = useGetMonthlyChallenge();
-  const { data: sessions } = useGetGameSessions();
+  const { data: activityHistory } = useGetActivityHistory();
 
   const { mutateAsync: updateProfile, isPending: isUpdatingProfile } = useUpdateProfile();
   const { mutateAsync: changePassword, isPending: isChangingPassword } = useChangePassword();
@@ -150,24 +150,44 @@ export default function Profile() {
   const totalWords = levelStats?.reduce((s, l) => s + l.totalWords, 0) ?? 0;
   const remaining = totalWords - totalLearned;
 
-  const weekActivity = (() => {
-    const days: boolean[] = Array(7).fill(false);
-    if (!sessions) return days;
-    const now = Date.now();
-    for (const s of sessions) {
-      const diffMs = now - new Date(s.createdAt).getTime();
-      const diffDays = Math.floor(diffMs / 86400000);
-      if (diffDays >= 0 && diffDays < 7) days[6 - diffDays] = true;
+  const heatmap = (() => {
+    const activityMap = new Map<string, number>();
+    if (activityHistory) {
+      for (const d of activityHistory) activityMap.set(d.date, d.count);
     }
-    return days;
+    const NUM_WEEKS = 52;
+    const today = new Date();
+    const todayDow = today.getUTCDay();
+    const gridEndDate = new Date(today);
+    gridEndDate.setUTCDate(today.getUTCDate() + (6 - todayDow));
+    const weeks: { date: string; count: number }[][] = [];
+    for (let w = NUM_WEEKS - 1; w >= 0; w--) {
+      const week: { date: string; count: number }[] = [];
+      for (let d = 0; d < 7; d++) {
+        const cell = new Date(gridEndDate);
+        cell.setUTCDate(gridEndDate.getUTCDate() - (w * 7 + (6 - d)));
+        const dateStr = cell.toISOString().split("T")[0]!;
+        week.push({ date: dateStr, count: activityMap.get(dateStr) ?? 0 });
+      }
+      weeks.push(week);
+    }
+    return weeks;
   })();
 
-  const DAY_LABELS = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
-  const todayDow = new Date().getDay();
-  const orderedDays = Array.from({ length: 7 }, (_, i) => {
-    const dow = (todayDow - 6 + i + 7) % 7;
-    return { label: DAY_LABELS[dow === 0 ? 6 : dow - 1] ?? DAY_LABELS[i], active: weekActivity[i] };
-  });
+  const MONTH_ABBR = ["Yan", "Fev", "Mar", "Apr", "May", "Iyn", "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"];
+
+  const monthLabels = (() => {
+    const labels: { label: string; col: number }[] = [];
+    let lastMonth = -1;
+    heatmap.forEach((week, wi) => {
+      const month = new Date(week[0]!.date).getUTCMonth();
+      if (month !== lastMonth) {
+        labels.push({ label: MONTH_ABBR[month] ?? "", col: wi });
+        lastMonth = month;
+      }
+    });
+    return labels;
+  })();
 
   const handleSaveName = async () => {
     if (!editName.trim()) return;
@@ -280,26 +300,69 @@ export default function Profile() {
         ))}
       </div>
 
-      {/* Weekly activity strip */}
+      {/* 52-week learning calendar heatmap */}
       <Card className="rounded-2xl border-border/50">
         <CardContent className="p-5">
           <div className="flex items-center gap-2 font-bold mb-4">
             <Flame className="w-5 h-5 text-orange-500" />
-            Bu hafta faollik
+            O'rganish tarixi
           </div>
-          <div className="flex gap-2 justify-between">
-            {orderedDays.map((d, i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
-                <div
-                  className={`w-full aspect-square rounded-xl max-w-10 ${
-                    d.active
-                      ? "bg-primary shadow-sm shadow-primary/30"
-                      : "bg-muted"
-                  }`}
-                />
-                <span className="text-xs text-muted-foreground font-medium">{d.label}</span>
+          <div className="overflow-x-auto">
+            <div className="inline-block min-w-max">
+              {/* Month labels row */}
+              <div className="flex mb-1" style={{ paddingLeft: "28px" }}>
+                {heatmap.map((_, wi) => {
+                  const label = monthLabels.find((m) => m.col === wi);
+                  return (
+                    <div key={wi} className="w-[12px] mr-[2px] text-[9px] text-muted-foreground font-medium leading-none">
+                      {label ? label.label : ""}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+              {/* Grid: 7 rows × 52 cols */}
+              <div className="flex gap-0">
+                {/* Day labels */}
+                <div className="flex flex-col gap-[2px] mr-1 shrink-0">
+                  {["Ya", "", "Se", "", "Pa", "", "Sh"].map((lbl, i) => (
+                    <div key={i} className="w-[22px] h-[12px] text-[9px] text-muted-foreground font-medium flex items-center justify-end pr-1">
+                      {lbl}
+                    </div>
+                  ))}
+                </div>
+                {/* Heatmap columns */}
+                <div className="flex gap-[2px]">
+                  {heatmap.map((week, wi) => (
+                    <div key={wi} className="flex flex-col gap-[2px]">
+                      {week.map((cell, di) => {
+                        const intensity = cell.count === 0 ? 0 : cell.count === 1 ? 1 : cell.count <= 3 ? 2 : 3;
+                        const colors = [
+                          "bg-muted",
+                          "bg-primary/20",
+                          "bg-primary/50",
+                          "bg-primary",
+                        ];
+                        return (
+                          <div
+                            key={di}
+                            title={`${cell.date}: ${cell.count} o'yin`}
+                            className={`w-[12px] h-[12px] rounded-[2px] ${colors[intensity]}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Legend */}
+              <div className="flex items-center gap-1 mt-2 justify-end">
+                <span className="text-[10px] text-muted-foreground">Kam</span>
+                {["bg-muted", "bg-primary/20", "bg-primary/50", "bg-primary"].map((c, i) => (
+                  <div key={i} className={`w-[12px] h-[12px] rounded-[2px] ${c}`} />
+                ))}
+                <span className="text-[10px] text-muted-foreground">Ko'p</span>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
