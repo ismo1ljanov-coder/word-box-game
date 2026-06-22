@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Api
-  version: 0.3.0
+  version: 0.4.0
   description: Wordbox API - English vocabulary learning platform
 servers:
   - url: /api
@@ -19,6 +19,14 @@ tags:
     description: Game sessions and scores
   - name: stats
     description: Learning statistics
+  - name: achievements
+    description: Achievement and badge operations
+  - name: challenges
+    description: Daily, weekly, monthly challenges
+  - name: leaderboard
+    description: Leaderboard rankings
+  - name: profile
+    description: User profile management
 paths:
   /healthz:
     get:
@@ -120,7 +128,7 @@ paths:
               $ref: "#/components/schemas/ForgotPasswordInput"
       responses:
         "200":
-          description: Code sent (dev mode returns code in response)
+          description: Code sent (or ignored if phone not found)
           content:
             application/json:
               schema:
@@ -148,36 +156,80 @@ paths:
                 properties:
                   ok:
                     type: boolean
-        "400":
-          description: Invalid or expired code
+
+  /profile:
+    patch:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update display name and daily goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileInput"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileUpdateResult"
+
+  /profile/password:
+    patch:
+      operationId: changePassword
+      tags: [profile]
+      summary: Change password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "401":
+          description: Current password incorrect
 
   /words:
     get:
       operationId: listWords
       tags: [words]
-      summary: List vocabulary words, optionally filtered by level
+      summary: List vocabulary words with progress
       parameters:
         - name: level
           in: query
           schema:
-            type: ["string", "null"]
-            enum: [A1, A2, B1, B2, C1, C2, null]
-        - name: category
-          in: query
-          schema:
-            type: ["string", "null"]
+            type: string
+            enum: [A1, A2, B1, B2, C1, C2]
         - name: search
           in: query
           schema:
-            type: ["string", "null"]
+            type: string
         - name: page
           in: query
           schema:
-            type: ["integer", "null"]
+            type: integer
+            default: 1
         - name: pageSize
           in: query
           schema:
-            type: ["integer", "null"]
+            type: integer
+            default: 20
+        - name: favoritesOnly
+          in: query
+          schema:
+            type: boolean
       responses:
         "200":
           description: List of words
@@ -186,48 +238,34 @@ paths:
               schema:
                 $ref: "#/components/schemas/WordListResponse"
 
-  /words/favorites:
-    get:
-      operationId: getFavoriteWords
-      tags: [words]
-      summary: Get all favorited words
-      responses:
-        "200":
-          description: List of favorite words
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/WordWithProgress"
-
-  /words/{id}:
+  /words/{wordId}:
     get:
       operationId: getWord
       tags: [words]
+      summary: Get a single word by ID
       parameters:
-        - name: id
+        - name: wordId
           in: path
           required: true
           schema:
             type: integer
       responses:
         "200":
-          description: Word detail
+          description: Word details
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/WordWithProgress"
         "404":
-          description: Not found
+          description: Word not found
 
-  /words/{id}/progress:
+  /words/{wordId}/progress:
     post:
       operationId: markWordProgress
       tags: [progress]
-      summary: Record that user learned or practiced a word
+      summary: Record a practice result for a word
       parameters:
-        - name: id
+        - name: wordId
           in: path
           required: true
           schema:
@@ -246,13 +284,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/WordProgress"
 
-  /words/{id}/favorite:
+  /words/{wordId}/favorite:
     post:
       operationId: toggleFavorite
       tags: [words]
-      summary: Toggle favorite status of a word
+      summary: Toggle favorite status for a word
       parameters:
-        - name: id
+        - name: wordId
           in: path
           required: true
           schema:
@@ -267,12 +305,12 @@ paths:
 
   /progress:
     get:
-      operationId: listProgress
+      operationId: getUserProgress
       tags: [progress]
-      summary: Get all word progress for the user
+      summary: Get all word progress for the current user
       responses:
         "200":
-          description: Progress list
+          description: User word progress
           content:
             application/json:
               schema:
@@ -282,12 +320,12 @@ paths:
 
   /games/sessions:
     get:
-      operationId: listGameSessions
+      operationId: getGameSessions
       tags: [games]
-      summary: Get recent game sessions
+      summary: Get recent game sessions for the current user
       responses:
         "200":
-          description: Sessions list
+          description: List of game sessions
           content:
             application/json:
               schema:
@@ -297,7 +335,7 @@ paths:
     post:
       operationId: createGameSession
       tags: [games]
-      summary: Save a completed game session score
+      summary: Save a completed game session
       requestBody:
         required: true
         content:
@@ -312,30 +350,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/GameSession"
 
-  /games/crossword:
+  /games/daily-challenge:
     get:
-      operationId: getCrosswordPuzzle
+      operationId: getDailyChallengeGame
       tags: [games]
-      summary: Generate a crossword puzzle for a given level
-      parameters:
-        - name: level
-          in: query
-          schema:
-            type: string
-            enum: [A1, A2, B1, B2, C1, C2]
+      summary: Get today's daily challenge questions
       responses:
         "200":
-          description: Crossword puzzle data
+          description: Daily challenge data
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CrosswordPuzzle"
+                $ref: "#/components/schemas/DailyChallengeResponse"
 
   /games/quiz:
     get:
       operationId: getQuizWords
       tags: [games]
-      summary: Get words for a quiz session
+      summary: Get quiz questions
       parameters:
         - name: level
           in: query
@@ -349,7 +381,7 @@ paths:
             default: 10
       responses:
         "200":
-          description: Quiz words with distractors
+          description: Quiz questions
           content:
             application/json:
               schema:
@@ -357,24 +389,30 @@ paths:
                 items:
                   $ref: "#/components/schemas/QuizQuestion"
 
-  /games/daily-challenge:
+  /games/crossword:
     get:
-      operationId: getDailyChallenge
+      operationId: getCrosswordPuzzle
       tags: [games]
-      summary: Get today's daily challenge words
+      summary: Get a crossword puzzle
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [A1, A2, B1, B2, C1, C2]
       responses:
         "200":
-          description: Daily challenge data
+          description: Crossword puzzle
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DailyChallengeResponse"
+                $ref: "#/components/schemas/CrosswordPuzzle"
 
   /stats/summary:
     get:
       operationId: getStatsSummary
       tags: [stats]
-      summary: Get learning summary stats
+      summary: Get a summary of the user's learning statistics
       responses:
         "200":
           description: Stats summary
@@ -387,16 +425,126 @@ paths:
     get:
       operationId: getLevelStats
       tags: [stats]
-      summary: Get progress breakdown by level
+      summary: Get per-CEFR-level progress
       responses:
         "200":
-          description: Level breakdown
+          description: Level-by-level stats
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/LevelStat"
+
+  /achievements:
+    get:
+      operationId: getUserAchievements
+      tags: [achievements]
+      summary: Get the current user's unlocked achievements
+      responses:
+        "200":
+          description: Unlocked achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Achievement"
+
+  /achievements/all:
+    get:
+      operationId: getAllAchievements
+      tags: [achievements]
+      summary: Get all achievements with locked/unlocked status
+      responses:
+        "200":
+          description: All achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AchievementFull"
+
+  /challenges/daily:
+    get:
+      operationId: getDailyChallenge
+      tags: [challenges]
+      summary: Get the daily challenge progress
+      responses:
+        "200":
+          description: Daily challenge
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChallengeProgress"
+
+  /challenges/weekly:
+    get:
+      operationId: getWeeklyChallenge
+      tags: [challenges]
+      summary: Get the weekly challenge progress
+      responses:
+        "200":
+          description: Weekly challenge
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChallengeProgress"
+
+  /challenges/monthly:
+    get:
+      operationId: getMonthlyChallenge
+      tags: [challenges]
+      summary: Get the monthly challenge progress
+      responses:
+        "200":
+          description: Monthly challenge
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChallengeProgress"
+
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [leaderboard]
+      summary: Get top 20 users by XP
+      responses:
+        "200":
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  /daily-reward:
+    post:
+      operationId: claimDailyReward
+      tags: [profile]
+      summary: Claim daily login reward (once per day)
+      responses:
+        "200":
+          description: Reward result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyRewardResult"
+
+  /daily-reward/status:
+    get:
+      operationId: getDailyRewardStatus
+      tags: [profile]
+      summary: Check if today's reward has been claimed
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyRewardStatusResult"
 
 components:
   schemas:
@@ -471,6 +619,35 @@ components:
         phone:
           type: string
         code:
+          type: string
+        newPassword:
+          type: string
+
+    UpdateProfileInput:
+      type: object
+      properties:
+        fullName:
+          type: string
+        dailyGoalTarget:
+          type: integer
+          enum: [10, 20, 30, 50]
+
+    ProfileUpdateResult:
+      type: object
+      required: [id, fullName, dailyGoalTarget]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        dailyGoalTarget:
+          type: integer
+
+    ChangePasswordInput:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
           type: string
         newPassword:
           type: string
@@ -677,7 +854,7 @@ components:
 
     StatsSummary:
       type: object
-      required: [totalWords, learnedWords, totalSessions, averageScore, streakDays, totalXp, totalCoins, dailyGoalTarget, dailyGoalCompleted, weeklyXp, favoriteWords]
+      required: [totalWords, learnedWords, totalSessions, averageScore, streakDays, longestStreak, totalXp, totalCoins, dailyGoalTarget, dailyGoalCompleted, weeklyXp, favoriteWords]
       properties:
         totalWords:
           type: integer
@@ -688,6 +865,8 @@ components:
         averageScore:
           type: integer
         streakDays:
+          type: integer
+        longestStreak:
           type: integer
         totalXp:
           type: integer
@@ -714,3 +893,106 @@ components:
           type: integer
         percentage:
           type: integer
+
+    Achievement:
+      type: object
+      required: [type, unlockedAt]
+      properties:
+        type:
+          type: string
+        unlockedAt:
+          type: ["string", "null"]
+
+    AchievementFull:
+      type: object
+      required: [type, title, icon, description, unlocked]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        icon:
+          type: string
+        description:
+          type: string
+        unlocked:
+          type: boolean
+        unlockedAt:
+          type: ["string", "null"]
+
+    ChallengeReward:
+      type: object
+      required: [coins, xp]
+      properties:
+        coins:
+          type: integer
+        xp:
+          type: integer
+
+    ChallengeProgress:
+      type: object
+      required: [id, title, description, type, target, progress, completed, reward, expiresAt]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [daily, weekly, monthly]
+        target:
+          type: integer
+        progress:
+          type: integer
+        completed:
+          type: boolean
+        reward:
+          $ref: "#/components/schemas/ChallengeReward"
+        expiresAt:
+          type: string
+
+    LeaderboardEntry:
+      type: object
+      required: [rank, id, fullName, initials, totalXp, streakDays, badge]
+      properties:
+        rank:
+          type: integer
+        id:
+          type: integer
+        fullName:
+          type: string
+        initials:
+          type: string
+        totalXp:
+          type: integer
+        streakDays:
+          type: integer
+        badge:
+          type: string
+
+    DailyRewardResult:
+      type: object
+      required: [alreadyClaimed, coinsEarned]
+      properties:
+        alreadyClaimed:
+          type: boolean
+        coinsEarned:
+          type: integer
+
+    DailyRewardStatusResult:
+      type: object
+      required: [claimed, coinsEarned]
+      properties:
+        claimed:
+          type: boolean
+        coinsEarned:
+          type: integer
+        reward:
+          type: object
+          properties:
+            coins:
+              type: integer
+            xp:
+              type: integer

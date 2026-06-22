@@ -3,15 +3,25 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.3.0
+ * OpenAPI spec version: 0.4.0
  */
 
+export * from './achievement';
+export * from './achievementFull';
 export * from './authUser';
 export * from './authUserSubscriptionTier';
+export * from './challengeProgress';
+export * from './challengeProgressType';
+export * from './challengeReward';
+export * from './changePassword200';
+export * from './changePasswordInput';
 export * from './crosswordClue';
 export * from './crosswordClueDirection';
 export * from './crosswordPuzzle';
 export * from './dailyChallengeResponse';
+export * from './dailyRewardResult';
+export * from './dailyRewardStatusResult';
+export * from './dailyRewardStatusResultReward';
 export * from './favoriteToggleResult';
 export * from './forgotPasswordInput';
 export * from './forgotPasswordResult';
@@ -26,17 +36,21 @@ export * from './getCrosswordPuzzleParams';
 export * from './getQuizWordsLevel';
 export * from './getQuizWordsParams';
 export * from './healthStatus';
+export * from './leaderboardEntry';
 export * from './levelStat';
 export * from './listWordsLevel';
 export * from './listWordsParams';
 export * from './loginInput';
 export * from './logout200';
+export * from './profileUpdateResult';
 export * from './progressInput';
 export * from './quizQuestion';
 export * from './registerInput';
 export * from './resetPassword200';
 export * from './resetPasswordInput';
 export * from './statsSummary';
+export * from './updateProfileInput';
+export * from './updateProfileInputDailyGoalTarget';
 export * from './word';
 export * from './wordLevel';
 export * from './wordListResponse';

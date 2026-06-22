@@ -48,7 +48,7 @@ export default function Words() {
 
   const handleMarkLearned = (wordId: number) => {
     markProgress.mutate(
-      { id: wordId, data: { correct: true } },
+      { wordId, data: { correct: true } },
       {
         onSuccess: () => {
           toast({ title: "Ajoyib!", description: "So'z o'rganilgan deb belgilandi." });
@@ -58,7 +58,7 @@ export default function Words() {
   };
 
   const handleFavorite = (wordId: number) => {
-    toggleFavorite.mutate({ id: wordId });
+    toggleFavorite.mutate({ wordId });
   };
 
   const playAudio = (text: string) => {

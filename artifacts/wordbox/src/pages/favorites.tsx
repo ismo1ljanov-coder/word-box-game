@@ -1,4 +1,4 @@
-import { useGetFavoriteWords, useToggleFavorite } from "@workspace/api-client-react";
+import { useListWords, useToggleFavorite } from "@workspace/api-client-react";
 import type { WordWithProgress } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,11 +9,12 @@ import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 
 export default function Favorites() {
-  const { data: favorites, isLoading, refetch } = useGetFavoriteWords();
+  const { data: favoritesData, isLoading, refetch } = useListWords({ favoritesOnly: true });
+  const favorites = (favoritesData as unknown as { items: WordWithProgress[] } | undefined)?.items;
   const toggleFavorite = useToggleFavorite();
 
   const handleRemoveFavorite = (wordId: number) => {
-    toggleFavorite.mutate({ id: wordId }, { onSuccess: () => refetch() });
+    toggleFavorite.mutate({ wordId }, { onSuccess: () => refetch() });
   };
 
   const playAudio = (text: string) => {

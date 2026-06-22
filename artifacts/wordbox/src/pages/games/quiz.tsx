@@ -47,7 +47,7 @@ export default function QuizGame() {
     const isCorrect = answer === question.correctAnswer;
     const newScore = score + (isCorrect ? 1 : 0);
 
-    markProgress.mutate({ id: question.wordId, data: { correct: isCorrect, gameType: "quiz" } });
+    markProgress.mutate({ wordId: question.wordId, data: { correct: isCorrect, gameType: "quiz" } });
 
     timerRef.current = setTimeout(() => {
       if (currentIdx < questions.length - 1) {

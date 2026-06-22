@@ -79,7 +79,7 @@ export default function SpellingGame() {
       const newCorrectCount = correctCount + 1;
       setCorrectCount(newCorrectCount);
 
-      markProgress.mutate({ id: question.wordId, data: { correct: true, gameType: "spelling" } });
+      markProgress.mutate({ wordId: question.wordId, data: { correct: true, gameType: "spelling" } });
 
       timerRef.current = setTimeout(() => {
         if (currentIdx < questions.length - 1) {

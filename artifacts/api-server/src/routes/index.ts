@@ -5,6 +5,10 @@ import wordsRouter from "./words";
 import progressRouter from "./progress";
 import gamesRouter from "./games";
 import statsRouter from "./stats";
+import achievementsRouter from "./achievements";
+import challengesRouter from "./challenges";
+import leaderboardRouter from "./leaderboard";
+import dailyRewardRouter from "./daily-reward";
 
 const router: IRouter = Router();
 
@@ -14,5 +18,9 @@ router.use(wordsRouter);
 router.use(progressRouter);
 router.use(gamesRouter);
 router.use(statsRouter);
+router.use(achievementsRouter);
+router.use(challengesRouter);
+router.use(leaderboardRouter);
+router.use(dailyRewardRouter);
 
 export default router;

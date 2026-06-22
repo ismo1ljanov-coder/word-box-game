@@ -21,6 +21,7 @@ import Stats from "@/pages/stats";
 import Profile from "@/pages/profile";
 import Favorites from "@/pages/favorites";
 import Premium from "@/pages/premium";
+import Leaderboard from "@/pages/leaderboard";
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
 import ForgotPasswordPage from "@/pages/auth/forgot-password";
@@ -92,6 +93,7 @@ function Router() {
               <Route path="/games/daily-challenge" component={DailyChallenge} />
               <Route path="/stats" component={Stats} />
               <Route path="/profile" component={Profile} />
+              <Route path="/leaderboard" component={Leaderboard} />
               <Route path="/premium" component={Premium} />
               <Route component={NotFound} />
             </Switch>

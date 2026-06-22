@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetStatsSummary, useListGameSessions } from "@workspace/api-client-react";
+import { useGetStatsSummary, useGetGameSessions } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -16,7 +16,7 @@ import {
 
 export default function Stats() {
   const { data: stats, isLoading: isStatsLoading } = useGetStatsSummary();
-  const { data: sessions, isLoading: isSessionsLoading } = useListGameSessions();
+  const { data: sessions, isLoading: isSessionsLoading } = useGetGameSessions();
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

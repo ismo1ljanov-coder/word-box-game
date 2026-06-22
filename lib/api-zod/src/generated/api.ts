@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.3.0
+ * OpenAPI spec version: 0.4.0
  */
 import * as zod from 'zod';
 
@@ -93,14 +93,45 @@ export const ResetPasswordResponse = zod.object({
 
 
 /**
- * @summary List vocabulary words, optionally filtered by level
+ * @summary Update display name and daily goal
  */
+export const UpdateProfileBody = zod.object({
+  "fullName": zod.string().optional(),
+  "dailyGoalTarget": zod.union([zod.literal(10),zod.literal(20),zod.literal(30),zod.literal(50)]).optional()
+})
+
+export const UpdateProfileResponse = zod.object({
+  "id": zod.number(),
+  "fullName": zod.string(),
+  "dailyGoalTarget": zod.number()
+})
+
+
+/**
+ * @summary Change password
+ */
+export const ChangePasswordBody = zod.object({
+  "currentPassword": zod.string(),
+  "newPassword": zod.string()
+})
+
+export const ChangePasswordResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary List vocabulary words with progress
+ */
+export const listWordsQueryPageDefault = 1;
+export const listWordsQueryPageSizeDefault = 20;
+
 export const ListWordsQueryParams = zod.object({
-  "level": zod.union([zod.literal('A1'),zod.literal('A2'),zod.literal('B1'),zod.literal('B2'),zod.literal('C1'),zod.literal('C2'),zod.literal(null)]).nullish(),
-  "category": zod.coerce.string().nullish(),
-  "search": zod.coerce.string().nullish(),
-  "page": zod.coerce.number().nullish(),
-  "pageSize": zod.coerce.number().nullish()
+  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).optional(),
+  "search": zod.coerce.string().optional(),
+  "page": zod.coerce.number().default(listWordsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listWordsQueryPageSizeDefault),
+  "favoritesOnly": zod.coerce.boolean().optional()
 })
 
 export const ListWordsResponse = zod.object({
@@ -127,29 +158,10 @@ export const ListWordsResponse = zod.object({
 
 
 /**
- * @summary Get all favorited words
+ * @summary Get a single word by ID
  */
-export const GetFavoriteWordsResponseItem = zod.object({
-  "id": zod.number(),
-  "word": zod.string(),
-  "translation": zod.string().describe('Uzbek translation'),
-  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
-  "category": zod.string(),
-  "partOfSpeech": zod.string().nullish(),
-  "exampleSentence": zod.string().nullish(),
-  "exampleTranslation": zod.string().nullish(),
-  "phonetic": zod.string().nullish()
-}).and(zod.object({
-  "learned": zod.boolean().optional(),
-  "practiceCount": zod.number().optional(),
-  "score": zod.number().optional(),
-  "isFavorite": zod.boolean().optional()
-}))
-export const GetFavoriteWordsResponse = zod.array(GetFavoriteWordsResponseItem)
-
-
 export const GetWordParams = zod.object({
-  "id": zod.coerce.number()
+  "wordId": zod.coerce.number()
 })
 
 export const GetWordResponse = zod.object({
@@ -171,10 +183,10 @@ export const GetWordResponse = zod.object({
 
 
 /**
- * @summary Record that user learned or practiced a word
+ * @summary Record a practice result for a word
  */
 export const MarkWordProgressParams = zod.object({
-  "id": zod.coerce.number()
+  "wordId": zod.coerce.number()
 })
 
 export const MarkWordProgressBody = zod.object({
@@ -192,10 +204,10 @@ export const MarkWordProgressResponse = zod.object({
 
 
 /**
- * @summary Toggle favorite status of a word
+ * @summary Toggle favorite status for a word
  */
 export const ToggleFavoriteParams = zod.object({
-  "id": zod.coerce.number()
+  "wordId": zod.coerce.number()
 })
 
 export const ToggleFavoriteResponse = zod.object({
@@ -205,22 +217,22 @@ export const ToggleFavoriteResponse = zod.object({
 
 
 /**
- * @summary Get all word progress for the user
+ * @summary Get all word progress for the current user
  */
-export const ListProgressResponseItem = zod.object({
+export const GetUserProgressResponseItem = zod.object({
   "wordId": zod.number(),
   "learned": zod.boolean(),
   "practiceCount": zod.number(),
   "score": zod.number().describe('0-100 mastery score'),
   "isFavorite": zod.boolean()
 })
-export const ListProgressResponse = zod.array(ListProgressResponseItem)
+export const GetUserProgressResponse = zod.array(GetUserProgressResponseItem)
 
 
 /**
- * @summary Get recent game sessions
+ * @summary Get recent game sessions for the current user
  */
-export const ListGameSessionsResponseItem = zod.object({
+export const GetGameSessionsResponseItem = zod.object({
   "id": zod.number(),
   "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling', 'daily_challenge', 'anagram', 'speed_quiz']),
   "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
@@ -230,11 +242,11 @@ export const ListGameSessionsResponseItem = zod.object({
   "coinsEarned": zod.number(),
   "createdAt": zod.string()
 })
-export const ListGameSessionsResponse = zod.array(ListGameSessionsResponseItem)
+export const GetGameSessionsResponse = zod.array(GetGameSessionsResponseItem)
 
 
 /**
- * @summary Save a completed game session score
+ * @summary Save a completed game session
  */
 export const CreateGameSessionBody = zod.object({
   "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling', 'daily_challenge', 'anagram', 'speed_quiz']),
@@ -247,7 +259,41 @@ export const CreateGameSessionBody = zod.object({
 
 
 /**
- * @summary Generate a crossword puzzle for a given level
+ * @summary Get today's daily challenge questions
+ */
+export const GetDailyChallengeGameResponse = zod.object({
+  "questions": zod.array(zod.object({
+  "wordId": zod.number(),
+  "word": zod.string().describe('English word to translate'),
+  "correctAnswer": zod.string().describe('Correct Uzbek translation'),
+  "options": zod.array(zod.string()).describe('4 options including correct answer')
+})),
+  "completedToday": zod.boolean(),
+  "bonusCoins": zod.number()
+})
+
+
+/**
+ * @summary Get quiz questions
+ */
+export const getQuizWordsQueryCountDefault = 10;
+
+export const GetQuizWordsQueryParams = zod.object({
+  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).optional(),
+  "count": zod.coerce.number().default(getQuizWordsQueryCountDefault)
+})
+
+export const GetQuizWordsResponseItem = zod.object({
+  "wordId": zod.number(),
+  "word": zod.string().describe('English word to translate'),
+  "correctAnswer": zod.string().describe('Correct Uzbek translation'),
+  "options": zod.array(zod.string()).describe('4 options including correct answer')
+})
+export const GetQuizWordsResponse = zod.array(GetQuizWordsResponseItem)
+
+
+/**
+ * @summary Get a crossword puzzle
  */
 export const GetCrosswordPuzzleQueryParams = zod.object({
   "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).optional()
@@ -269,41 +315,7 @@ export const GetCrosswordPuzzleResponse = zod.object({
 
 
 /**
- * @summary Get words for a quiz session
- */
-export const getQuizWordsQueryCountDefault = 10;
-
-export const GetQuizWordsQueryParams = zod.object({
-  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).optional(),
-  "count": zod.coerce.number().default(getQuizWordsQueryCountDefault)
-})
-
-export const GetQuizWordsResponseItem = zod.object({
-  "wordId": zod.number(),
-  "word": zod.string().describe('English word to translate'),
-  "correctAnswer": zod.string().describe('Correct Uzbek translation'),
-  "options": zod.array(zod.string()).describe('4 options including correct answer')
-})
-export const GetQuizWordsResponse = zod.array(GetQuizWordsResponseItem)
-
-
-/**
- * @summary Get today's daily challenge words
- */
-export const GetDailyChallengeResponse = zod.object({
-  "questions": zod.array(zod.object({
-  "wordId": zod.number(),
-  "word": zod.string().describe('English word to translate'),
-  "correctAnswer": zod.string().describe('Correct Uzbek translation'),
-  "options": zod.array(zod.string()).describe('4 options including correct answer')
-})),
-  "completedToday": zod.boolean(),
-  "bonusCoins": zod.number()
-})
-
-
-/**
- * @summary Get learning summary stats
+ * @summary Get a summary of the user's learning statistics
  */
 export const GetStatsSummaryResponse = zod.object({
   "totalWords": zod.number(),
@@ -311,6 +323,7 @@ export const GetStatsSummaryResponse = zod.object({
   "totalSessions": zod.number(),
   "averageScore": zod.number(),
   "streakDays": zod.number(),
+  "longestStreak": zod.number(),
   "totalXp": zod.number(),
   "totalCoins": zod.number(),
   "dailyGoalTarget": zod.number(),
@@ -321,7 +334,7 @@ export const GetStatsSummaryResponse = zod.object({
 
 
 /**
- * @summary Get progress breakdown by level
+ * @summary Get per-CEFR-level progress
  */
 export const GetLevelStatsResponseItem = zod.object({
   "level": zod.string(),
@@ -330,5 +343,123 @@ export const GetLevelStatsResponseItem = zod.object({
   "percentage": zod.number()
 })
 export const GetLevelStatsResponse = zod.array(GetLevelStatsResponseItem)
+
+
+/**
+ * @summary Get the current user's unlocked achievements
+ */
+export const GetUserAchievementsResponseItem = zod.object({
+  "type": zod.string(),
+  "unlockedAt": zod.string().nullable()
+})
+export const GetUserAchievementsResponse = zod.array(GetUserAchievementsResponseItem)
+
+
+/**
+ * @summary Get all achievements with locked/unlocked status
+ */
+export const GetAllAchievementsResponseItem = zod.object({
+  "type": zod.string(),
+  "title": zod.string(),
+  "icon": zod.string(),
+  "description": zod.string(),
+  "unlocked": zod.boolean(),
+  "unlockedAt": zod.string().nullish()
+})
+export const GetAllAchievementsResponse = zod.array(GetAllAchievementsResponseItem)
+
+
+/**
+ * @summary Get the daily challenge progress
+ */
+export const GetDailyChallengeResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "type": zod.enum(['daily', 'weekly', 'monthly']),
+  "target": zod.number(),
+  "progress": zod.number(),
+  "completed": zod.boolean(),
+  "reward": zod.object({
+  "coins": zod.number(),
+  "xp": zod.number()
+}),
+  "expiresAt": zod.string()
+})
+
+
+/**
+ * @summary Get the weekly challenge progress
+ */
+export const GetWeeklyChallengeResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "type": zod.enum(['daily', 'weekly', 'monthly']),
+  "target": zod.number(),
+  "progress": zod.number(),
+  "completed": zod.boolean(),
+  "reward": zod.object({
+  "coins": zod.number(),
+  "xp": zod.number()
+}),
+  "expiresAt": zod.string()
+})
+
+
+/**
+ * @summary Get the monthly challenge progress
+ */
+export const GetMonthlyChallengeResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "type": zod.enum(['daily', 'weekly', 'monthly']),
+  "target": zod.number(),
+  "progress": zod.number(),
+  "completed": zod.boolean(),
+  "reward": zod.object({
+  "coins": zod.number(),
+  "xp": zod.number()
+}),
+  "expiresAt": zod.string()
+})
+
+
+/**
+ * @summary Get top 20 users by XP
+ */
+export const GetLeaderboardResponseItem = zod.object({
+  "rank": zod.number(),
+  "id": zod.number(),
+  "fullName": zod.string(),
+  "initials": zod.string(),
+  "totalXp": zod.number(),
+  "streakDays": zod.number(),
+  "badge": zod.string()
+})
+export const GetLeaderboardResponse = zod.array(GetLeaderboardResponseItem)
+
+
+/**
+ * @summary Claim daily login reward (once per day)
+ */
+export const ClaimDailyRewardResponse = zod.object({
+  "alreadyClaimed": zod.boolean(),
+  "coinsEarned": zod.number()
+})
+
+
+/**
+ * @summary Check if today's reward has been claimed
+ */
+export const GetDailyRewardStatusResponse = zod.object({
+  "claimed": zod.boolean(),
+  "coinsEarned": zod.number(),
+  "reward": zod.object({
+  "coins": zod.number().optional(),
+  "xp": zod.number().optional()
+}).optional()
+})
 
 

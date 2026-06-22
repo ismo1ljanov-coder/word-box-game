@@ -92,7 +92,7 @@ export default function AnagramGame() {
             setCheckState("idle");
           }, 1200);
         } else {
-          markProgress.mutate({ id: questions![currentIdx].wordId, data: { correct: true, gameType: "spelling" } });
+          markProgress.mutate({ wordId: questions![currentIdx].wordId, data: { correct: true, gameType: "spelling" } });
           timerRef.current = setTimeout(() => {
             advanceQuestion(currentIdx + 1, true);
           }, 900);
@@ -114,7 +114,7 @@ export default function AnagramGame() {
 
   const handleSkip = () => {
     if (!questions) return;
-    markProgress.mutate({ id: questions[currentIdx].wordId, data: { correct: false, gameType: "spelling" } });
+    markProgress.mutate({ wordId: questions[currentIdx].wordId, data: { correct: false, gameType: "spelling" } });
     advanceQuestion(currentIdx + 1, false);
   };
 

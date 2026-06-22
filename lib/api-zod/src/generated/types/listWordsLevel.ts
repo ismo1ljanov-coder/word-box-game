@@ -3,10 +3,10 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.3.0
+ * OpenAPI spec version: 0.4.0
  */
 
-export type ListWordsLevel = typeof ListWordsLevel[keyof typeof ListWordsLevel] | null;
+export type ListWordsLevel = typeof ListWordsLevel[keyof typeof ListWordsLevel];
 
 
 export const ListWordsLevel = {

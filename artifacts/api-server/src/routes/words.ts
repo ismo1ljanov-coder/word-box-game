@@ -48,7 +48,8 @@ router.get("/words", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid query params" });
     return;
   }
-  const { level, category, search } = parsed.data;
+  const { level, search } = parsed.data;
+  const category = typeof req.query.category === "string" ? req.query.category : undefined;
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = Math.min(100, Math.max(10, Number(req.query.pageSize) || 50));
   const offset = (page - 1) * pageSize;
@@ -127,7 +128,7 @@ router.get("/words/:id", requireAuth, async (req, res) => {
     })
     .from(wordsTable)
     .leftJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
-    .where(eq(wordsTable.id, parsed.data.id));
+    .where(eq(wordsTable.id, parsed.data.wordId));
 
   if (!row) {
     res.status(404).json({ error: "Word not found" });
@@ -152,13 +153,13 @@ router.post("/words/:id/progress", requireAuth, async (req, res) => {
     return;
   }
 
-  const { id } = paramsParsed.data;
+  const { wordId } = paramsParsed.data;
   const { correct } = bodyParsed.data;
 
   const [existing] = await db
     .select()
     .from(wordProgressTable)
-    .where(and(eq(wordProgressTable.wordId, id), eq(wordProgressTable.userId, userId)));
+    .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)));
 
   if (existing) {
     const newScore = correct ? Math.min(100, existing.score + 10) : Math.max(0, existing.score - 5);
@@ -168,7 +169,7 @@ router.post("/words/:id/progress", requireAuth, async (req, res) => {
     const [updated] = await db
       .update(wordProgressTable)
       .set({ score: newScore, practiceCount: newCount, learned, updatedAt: new Date() })
-      .where(and(eq(wordProgressTable.wordId, id), eq(wordProgressTable.userId, userId)))
+      .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)))
       .returning();
 
     res.json({
@@ -182,7 +183,7 @@ router.post("/words/:id/progress", requireAuth, async (req, res) => {
     const score = correct ? 10 : 0;
     const [created] = await db
       .insert(wordProgressTable)
-      .values({ userId, wordId: id, learned: false, practiceCount: 1, score, isFavorite: false })
+      .values({ userId, wordId, learned: false, practiceCount: 1, score, isFavorite: false })
       .returning();
 
     res.json({
@@ -203,25 +204,25 @@ router.post("/words/:id/favorite", requireAuth, async (req, res) => {
     return;
   }
 
-  const { id } = parsed.data;
+  const { wordId } = parsed.data;
   const [existing] = await db
     .select()
     .from(wordProgressTable)
-    .where(and(eq(wordProgressTable.wordId, id), eq(wordProgressTable.userId, userId)));
+    .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)));
 
   if (existing) {
     const [updated] = await db
       .update(wordProgressTable)
       .set({ isFavorite: !existing.isFavorite, updatedAt: new Date() })
-      .where(and(eq(wordProgressTable.wordId, id), eq(wordProgressTable.userId, userId)))
+      .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)))
       .returning();
-    res.json({ wordId: id, isFavorite: updated.isFavorite });
+    res.json({ wordId, isFavorite: updated.isFavorite });
   } else {
     const [created] = await db
       .insert(wordProgressTable)
-      .values({ userId, wordId: id, learned: false, practiceCount: 0, score: 0, isFavorite: true })
+      .values({ userId, wordId, learned: false, practiceCount: 0, score: 0, isFavorite: true })
       .returning();
-    res.json({ wordId: id, isFavorite: created.isFavorite });
+    res.json({ wordId, isFavorite: created.isFavorite });
   }
 });
 

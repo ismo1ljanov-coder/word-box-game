@@ -74,7 +74,7 @@ export default function SpeedQuizGame() {
           setAnswerState("timeout");
           setIsChecking(true);
           const q = qs?.[idx];
-          if (q) markProgress.mutate({ id: q.wordId, data: { correct: false, gameType: "quiz" } });
+          if (q) markProgress.mutate({ wordId: q.wordId, data: { correct: false, gameType: "quiz" } });
           timerRef.current = setTimeout(() => {
             advanceQuestion(idx + 1, correctRef.current, qs?.length ?? 0);
           }, 1000);
@@ -122,7 +122,7 @@ export default function SpeedQuizGame() {
     correctRef.current = newCorrect;
     if (isCorrect) setCorrectCount(newCorrect);
 
-    markProgress.mutate({ id: q.wordId, data: { correct: isCorrect, gameType: "quiz" } });
+    markProgress.mutate({ wordId: q.wordId, data: { correct: isCorrect, gameType: "quiz" } });
 
     timerRef.current = setTimeout(() => {
       advanceQuestion(currentIdx + 1, newCorrect, questions.length);

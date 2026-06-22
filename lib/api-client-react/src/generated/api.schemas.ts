@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.3.0
+ * OpenAPI spec version: 0.4.0
  */
 export interface HealthStatus {
   status: string;
@@ -55,6 +55,32 @@ export interface ForgotPasswordResult {
 export interface ResetPasswordInput {
   phone: string;
   code: string;
+  newPassword: string;
+}
+
+export type UpdateProfileInputDailyGoalTarget = typeof UpdateProfileInputDailyGoalTarget[keyof typeof UpdateProfileInputDailyGoalTarget];
+
+
+export const UpdateProfileInputDailyGoalTarget = {
+  NUMBER_10: 10,
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_50: 50,
+} as const;
+
+export interface UpdateProfileInput {
+  fullName?: string;
+  dailyGoalTarget?: UpdateProfileInputDailyGoalTarget;
+}
+
+export interface ProfileUpdateResult {
+  id: number;
+  fullName: string;
+  dailyGoalTarget: number;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
   newPassword: string;
 }
 
@@ -242,6 +268,7 @@ export interface StatsSummary {
   totalSessions: number;
   averageScore: number;
   streakDays: number;
+  longestStreak: number;
   totalXp: number;
   totalCoins: number;
   dailyGoalTarget: number;
@@ -257,6 +284,74 @@ export interface LevelStat {
   percentage: number;
 }
 
+export interface Achievement {
+  type: string;
+  /** @nullable */
+  unlockedAt: string | null;
+}
+
+export interface AchievementFull {
+  type: string;
+  title: string;
+  icon: string;
+  description: string;
+  unlocked: boolean;
+  /** @nullable */
+  unlockedAt?: string | null;
+}
+
+export interface ChallengeReward {
+  coins: number;
+  xp: number;
+}
+
+export type ChallengeProgressType = typeof ChallengeProgressType[keyof typeof ChallengeProgressType];
+
+
+export const ChallengeProgressType = {
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export interface ChallengeProgress {
+  id: string;
+  title: string;
+  description: string;
+  type: ChallengeProgressType;
+  target: number;
+  progress: number;
+  completed: boolean;
+  reward: ChallengeReward;
+  expiresAt: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  id: number;
+  fullName: string;
+  initials: string;
+  totalXp: number;
+  streakDays: number;
+  badge: string;
+}
+
+export interface DailyRewardResult {
+  alreadyClaimed: boolean;
+  coinsEarned: number;
+}
+
+export type DailyRewardStatusResultReward = {
+  coins?: number;
+  xp?: number;
+};
+
+export interface DailyRewardStatusResult {
+  claimed: boolean;
+  coinsEarned: number;
+  reward?: DailyRewardStatusResultReward;
+}
+
 export type Logout200 = {
   ok: boolean;
 };
@@ -265,49 +360,22 @@ export type ResetPassword200 = {
   ok: boolean;
 };
 
-export type ListWordsParams = {
-/**
- * @nullable
- */
-level?: ListWordsLevel;
-/**
- * @nullable
- */
-category?: string | null;
-/**
- * @nullable
- */
-search?: string | null;
-/**
- * @nullable
- */
-page?: number | null;
-/**
- * @nullable
- */
-pageSize?: number | null;
+export type ChangePassword200 = {
+  ok: boolean;
 };
 
-export type ListWordsLevel = typeof ListWordsLevel[keyof typeof ListWordsLevel] | null;
+export type ListWordsParams = {
+level?: ListWordsLevel;
+search?: string;
+page?: number;
+pageSize?: number;
+favoritesOnly?: boolean;
+};
+
+export type ListWordsLevel = typeof ListWordsLevel[keyof typeof ListWordsLevel];
 
 
 export const ListWordsLevel = {
-  A1: 'A1',
-  A2: 'A2',
-  B1: 'B1',
-  B2: 'B2',
-  C1: 'C1',
-  C2: 'C2',
-} as const;
-
-export type GetCrosswordPuzzleParams = {
-level?: GetCrosswordPuzzleLevel;
-};
-
-export type GetCrosswordPuzzleLevel = typeof GetCrosswordPuzzleLevel[keyof typeof GetCrosswordPuzzleLevel];
-
-
-export const GetCrosswordPuzzleLevel = {
   A1: 'A1',
   A2: 'A2',
   B1: 'B1',
@@ -325,6 +393,22 @@ export type GetQuizWordsLevel = typeof GetQuizWordsLevel[keyof typeof GetQuizWor
 
 
 export const GetQuizWordsLevel = {
+  A1: 'A1',
+  A2: 'A2',
+  B1: 'B1',
+  B2: 'B2',
+  C1: 'C1',
+  C2: 'C2',
+} as const;
+
+export type GetCrosswordPuzzleParams = {
+level?: GetCrosswordPuzzleLevel;
+};
+
+export type GetCrosswordPuzzleLevel = typeof GetCrosswordPuzzleLevel[keyof typeof GetCrosswordPuzzleLevel];
+
+
+export const GetCrosswordPuzzleLevel = {
   A1: 'A1',
   A2: 'A2',
   B1: 'B1',

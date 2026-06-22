@@ -3,29 +3,14 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.3.0
+ * OpenAPI spec version: 0.4.0
  */
 import type { ListWordsLevel } from './listWordsLevel';
 
 export type ListWordsParams = {
-/**
- * @nullable
- */
 level?: ListWordsLevel;
-/**
- * @nullable
- */
-category?: string | null;
-/**
- * @nullable
- */
-search?: string | null;
-/**
- * @nullable
- */
-page?: number | null;
-/**
- * @nullable
- */
-pageSize?: number | null;
+search?: string;
+page?: number;
+pageSize?: number;
+favoritesOnly?: boolean;
 };

@@ -85,7 +85,7 @@ export default function MatchingGame() {
       newMatched.add(selectedEng);
       const newScore = score + 1;
 
-      markProgress.mutate({ id: selectedEng, data: { correct: true, gameType: "matching" } });
+      markProgress.mutate({ wordId: selectedEng, data: { correct: true, gameType: "matching" } });
       setMatched(newMatched);
       setScore(newScore);
       setSelectedEng(null);

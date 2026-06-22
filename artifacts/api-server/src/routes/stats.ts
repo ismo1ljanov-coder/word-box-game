@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { wordsTable, wordProgressTable, gameSessionsTable } from "@workspace/db";
+import { usersTable, wordsTable, wordProgressTable, gameSessionsTable } from "@workspace/db";
 import { sql, eq, gte, and } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 
@@ -9,7 +9,20 @@ const router = Router();
 router.get("/stats/summary", requireAuth, async (req, res) => {
   const userId = req.user!.id;
 
+  const [userRow] = await db
+    .select({
+      streakDays: usersTable.streakDays,
+      longestStreak: usersTable.longestStreak,
+      totalXp: usersTable.totalXp,
+      totalCoins: usersTable.totalCoins,
+      dailyGoalTarget: usersTable.dailyGoalTarget,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+
   const [wordCount] = await db.select({ count: sql<number>`count(*)::int` }).from(wordsTable);
+
   const [learnedCount] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(wordProgressTable)
@@ -25,18 +38,13 @@ router.get("/stats/summary", requireAuth, async (req, res) => {
     .from(gameSessionsTable)
     .where(eq(gameSessionsTable.userId, userId));
 
-  const [coinsResult] = await db
-    .select({ total: sql<number>`coalesce(sum(coins_earned), 0)::int` })
-    .from(gameSessionsTable)
-    .where(eq(gameSessionsTable.userId, userId));
-
   const [favoriteCount] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(wordProgressTable)
     .where(and(eq(wordProgressTable.isFavorite, true), eq(wordProgressTable.userId, userId)));
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
   const [dailyGoalResult] = await db
     .select({ count: sql<number>`count(distinct word_id)::int` })
     .from(wordProgressTable)
@@ -45,25 +53,25 @@ router.get("/stats/summary", requireAuth, async (req, res) => {
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   const [weeklyXpResult] = await db
-    .select({ total: sql<number>`coalesce(sum(correct_answers) * 5, 0)::int` })
+    .select({ total: sql<number>`coalesce(sum(correct_answers) * 10 + count(*) * 5, 0)::int` })
     .from(gameSessionsTable)
     .where(and(gte(gameSessionsTable.createdAt, weekAgo), eq(gameSessionsTable.userId, userId)));
 
-  const totalXp = learnedCount.count * 10 + sessionCount.count * 5;
-  const DAILY_GOAL_TARGET = 20;
+  const dailyGoalTarget = userRow?.dailyGoalTarget ?? 20;
 
   res.json({
     totalWords: wordCount.count,
     learnedWords: learnedCount.count,
     totalSessions: sessionCount.count,
     averageScore: avgScoreResult.avg || 0,
-    streakDays: 1,
-    totalXp,
-    totalCoins: coinsResult.total,
+    streakDays: userRow?.streakDays ?? 0,
+    longestStreak: userRow?.longestStreak ?? 0,
+    totalXp: userRow?.totalXp ?? 0,
+    totalCoins: userRow?.totalCoins ?? 0,
     favoriteWords: favoriteCount.count,
-    dailyGoalTarget: DAILY_GOAL_TARGET,
-    dailyGoalCompleted: Math.min(DAILY_GOAL_TARGET, dailyGoalResult.count),
-    weeklyXp: weeklyXpResult.total,
+    dailyGoalTarget,
+    dailyGoalCompleted: Math.min(dailyGoalTarget, dailyGoalResult.count),
+    weeklyXp: weeklyXpResult.total || 0,
   });
 });
 

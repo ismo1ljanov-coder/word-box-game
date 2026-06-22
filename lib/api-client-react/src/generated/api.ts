@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.3.0
+ * OpenAPI spec version: 0.4.0
  */
 import {
   useMutation,
@@ -20,9 +20,16 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  Achievement,
+  AchievementFull,
   AuthUser,
+  ChallengeProgress,
+  ChangePassword200,
+  ChangePasswordInput,
   CrosswordPuzzle,
   DailyChallengeResponse,
+  DailyRewardResult,
+  DailyRewardStatusResult,
   FavoriteToggleResult,
   ForgotPasswordInput,
   ForgotPasswordResult,
@@ -31,16 +38,19 @@ import type {
   GetCrosswordPuzzleParams,
   GetQuizWordsParams,
   HealthStatus,
+  LeaderboardEntry,
   LevelStat,
   ListWordsParams,
   LoginInput,
   Logout200,
+  ProfileUpdateResult,
   ProgressInput,
   QuizQuestion,
   RegisterInput,
   ResetPassword200,
   ResetPasswordInput,
   StatsSummary,
+  UpdateProfileInput,
   WordListResponse,
   WordProgress,
   WordWithProgress
@@ -521,7 +531,7 @@ export const resetPassword = async (resetPasswordInput: ResetPasswordInput, opti
 
 
 
-export const getResetPasswordMutationOptions = <TError = ErrorType<void>,
+export const getResetPasswordMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetPassword>>, TError,{data: BodyType<ResetPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof resetPassword>>, TError,{data: BodyType<ResetPasswordInput>}, TContext> => {
 
@@ -550,12 +560,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof resetPassword>>>
     export type ResetPasswordMutationBody = BodyType<ResetPasswordInput>
-    export type ResetPasswordMutationError = ErrorType<void>
+    export type ResetPasswordMutationError = ErrorType<unknown>
 
     /**
  * @summary Reset password using a code
  */
-export const useResetPassword = <TError = ErrorType<void>,
+export const useResetPassword = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetPassword>>, TError,{data: BodyType<ResetPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof resetPassword>>,
@@ -564,6 +574,148 @@ export const useResetPassword = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getResetPasswordMutationOptions(options));
+    }
+
+export const getUpdateProfileUrl = () => {
+
+
+
+
+  return `/api/profile`
+}
+
+/**
+ * @summary Update display name and daily goal
+ */
+export const updateProfile = async (updateProfileInput: UpdateProfileInput, options?: RequestInit): Promise<ProfileUpdateResult> => {
+
+  return customFetch<ProfileUpdateResult>(getUpdateProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateProfileInput,)
+  }
+);}
+
+
+
+
+export const getUpdateProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: BodyType<UpdateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: BodyType<UpdateProfileInput>}, TContext> => {
+
+const mutationKey = ['updateProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfile>>, {data: BodyType<UpdateProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateProfile>>>
+    export type UpdateProfileMutationBody = BodyType<UpdateProfileInput>
+    export type UpdateProfileMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update display name and daily goal
+ */
+export const useUpdateProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: BodyType<UpdateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProfile>>,
+        TError,
+        {data: BodyType<UpdateProfileInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateProfileMutationOptions(options));
+    }
+
+export const getChangePasswordUrl = () => {
+
+
+
+
+  return `/api/profile/password`
+}
+
+/**
+ * @summary Change password
+ */
+export const changePassword = async (changePasswordInput: ChangePasswordInput, options?: RequestInit): Promise<ChangePassword200> => {
+
+  return customFetch<ChangePassword200>(getChangePasswordUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      changePasswordInput,)
+  }
+);}
+
+
+
+
+export const getChangePasswordMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: BodyType<ChangePasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: BodyType<ChangePasswordInput>}, TContext> => {
+
+const mutationKey = ['changePassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changePassword>>, {data: BodyType<ChangePasswordInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  changePassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changePassword>>>
+    export type ChangePasswordMutationBody = BodyType<ChangePasswordInput>
+    export type ChangePasswordMutationError = ErrorType<void>
+
+    /**
+ * @summary Change password
+ */
+export const useChangePassword = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: BodyType<ChangePasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changePassword>>,
+        TError,
+        {data: BodyType<ChangePasswordInput>},
+        TContext
+      > => {
+      return useMutation(getChangePasswordMutationOptions(options));
     }
 
 export const getListWordsUrl = (params?: ListWordsParams,) => {
@@ -582,7 +734,7 @@ export const getListWordsUrl = (params?: ListWordsParams,) => {
 }
 
 /**
- * @summary List vocabulary words, optionally filtered by level
+ * @summary List vocabulary words with progress
  */
 export const listWords = async (params?: ListWordsParams, options?: RequestInit): Promise<WordListResponse> => {
 
@@ -629,7 +781,7 @@ export type ListWordsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List vocabulary words, optionally filtered by level
+ * @summary List vocabulary words with progress
  */
 
 export function useListWords<TData = Awaited<ReturnType<typeof listWords>>, TError = ErrorType<unknown>>(
@@ -650,20 +802,20 @@ export function useListWords<TData = Awaited<ReturnType<typeof listWords>>, TErr
 
 
 
-export const getGetFavoriteWordsUrl = () => {
+export const getGetWordUrl = (wordId: number,) => {
 
 
 
 
-  return `/api/words/favorites`
+  return `/api/words/${wordId}`
 }
 
 /**
- * @summary Get all favorited words
+ * @summary Get a single word by ID
  */
-export const getFavoriteWords = async ( options?: RequestInit): Promise<WordWithProgress[]> => {
+export const getWord = async (wordId: number, options?: RequestInit): Promise<WordWithProgress> => {
 
-  return customFetch<WordWithProgress[]>(getGetFavoriteWordsUrl(),
+  return customFetch<WordWithProgress>(getGetWordUrl(wordId),
   {
     ...options,
     method: 'GET'
@@ -676,116 +828,45 @@ export const getFavoriteWords = async ( options?: RequestInit): Promise<WordWith
 
 
 
-export const getGetFavoriteWordsQueryKey = () => {
+export const getGetWordQueryKey = (wordId: number,) => {
     return [
-    `/api/words/favorites`
+    `/api/words/${wordId}`
     ] as const;
     }
 
 
-export const getGetFavoriteWordsQueryOptions = <TData = Awaited<ReturnType<typeof getFavoriteWords>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFavoriteWords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetWordQueryOptions = <TData = Awaited<ReturnType<typeof getWord>>, TError = ErrorType<void>>(wordId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetFavoriteWordsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetWordQueryKey(wordId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFavoriteWords>>> = ({ signal }) => getFavoriteWords({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFavoriteWords>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetFavoriteWordsQueryResult = NonNullable<Awaited<ReturnType<typeof getFavoriteWords>>>
-export type GetFavoriteWordsQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Get all favorited words
- */
-
-export function useGetFavoriteWords<TData = Awaited<ReturnType<typeof getFavoriteWords>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFavoriteWords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetFavoriteWordsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWord>>> = ({ signal }) => getWord(wordId, { signal, ...requestOptions });
 
 
 
 
 
-
-
-export const getGetWordUrl = (id: number,) => {
-
-
-
-
-  return `/api/words/${id}`
-}
-
-export const getWord = async (id: number, options?: RequestInit): Promise<WordWithProgress> => {
-
-  return customFetch<WordWithProgress>(getGetWordUrl(id),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetWordQueryKey = (id: number,) => {
-    return [
-    `/api/words/${id}`
-    ] as const;
-    }
-
-
-export const getGetWordQueryOptions = <TData = Awaited<ReturnType<typeof getWord>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetWordQueryKey(id);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWord>>> = ({ signal }) => getWord(id, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWord>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(wordId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWord>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetWordQueryResult = NonNullable<Awaited<ReturnType<typeof getWord>>>
 export type GetWordQueryError = ErrorType<void>
 
 
+/**
+ * @summary Get a single word by ID
+ */
 
 export function useGetWord<TData = Awaited<ReturnType<typeof getWord>>, TError = ErrorType<void>>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ wordId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWord>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetWordQueryOptions(id,options)
+  const queryOptions = getGetWordQueryOptions(wordId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -798,21 +879,21 @@ export function useGetWord<TData = Awaited<ReturnType<typeof getWord>>, TError =
 
 
 
-export const getMarkWordProgressUrl = (id: number,) => {
+export const getMarkWordProgressUrl = (wordId: number,) => {
 
 
 
 
-  return `/api/words/${id}/progress`
+  return `/api/words/${wordId}/progress`
 }
 
 /**
- * @summary Record that user learned or practiced a word
+ * @summary Record a practice result for a word
  */
-export const markWordProgress = async (id: number,
+export const markWordProgress = async (wordId: number,
     progressInput: ProgressInput, options?: RequestInit): Promise<WordProgress> => {
 
-  return customFetch<WordProgress>(getMarkWordProgressUrl(id),
+  return customFetch<WordProgress>(getMarkWordProgressUrl(wordId),
   {
     ...options,
     method: 'POST',
@@ -826,8 +907,8 @@ export const markWordProgress = async (id: number,
 
 
 export const getMarkWordProgressMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markWordProgress>>, TError,{id: number;data: BodyType<ProgressInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof markWordProgress>>, TError,{id: number;data: BodyType<ProgressInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markWordProgress>>, TError,{wordId: number;data: BodyType<ProgressInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markWordProgress>>, TError,{wordId: number;data: BodyType<ProgressInput>}, TContext> => {
 
 const mutationKey = ['markWordProgress'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -839,10 +920,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markWordProgress>>, {id: number;data: BodyType<ProgressInput>}> = (props) => {
-          const {id,data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markWordProgress>>, {wordId: number;data: BodyType<ProgressInput>}> = (props) => {
+          const {wordId,data} = props ?? {};
 
-          return  markWordProgress(id,data,requestOptions)
+          return  markWordProgress(wordId,data,requestOptions)
         }
 
 
@@ -857,33 +938,33 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type MarkWordProgressMutationError = ErrorType<unknown>
 
     /**
- * @summary Record that user learned or practiced a word
+ * @summary Record a practice result for a word
  */
 export const useMarkWordProgress = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markWordProgress>>, TError,{id: number;data: BodyType<ProgressInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markWordProgress>>, TError,{wordId: number;data: BodyType<ProgressInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof markWordProgress>>,
         TError,
-        {id: number;data: BodyType<ProgressInput>},
+        {wordId: number;data: BodyType<ProgressInput>},
         TContext
       > => {
       return useMutation(getMarkWordProgressMutationOptions(options));
     }
 
-export const getToggleFavoriteUrl = (id: number,) => {
+export const getToggleFavoriteUrl = (wordId: number,) => {
 
 
 
 
-  return `/api/words/${id}/favorite`
+  return `/api/words/${wordId}/favorite`
 }
 
 /**
- * @summary Toggle favorite status of a word
+ * @summary Toggle favorite status for a word
  */
-export const toggleFavorite = async (id: number, options?: RequestInit): Promise<FavoriteToggleResult> => {
+export const toggleFavorite = async (wordId: number, options?: RequestInit): Promise<FavoriteToggleResult> => {
 
-  return customFetch<FavoriteToggleResult>(getToggleFavoriteUrl(id),
+  return customFetch<FavoriteToggleResult>(getToggleFavoriteUrl(wordId),
   {
     ...options,
     method: 'POST'
@@ -896,8 +977,8 @@ export const toggleFavorite = async (id: number, options?: RequestInit): Promise
 
 
 export const getToggleFavoriteMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFavorite>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof toggleFavorite>>, TError,{id: number}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFavorite>>, TError,{wordId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleFavorite>>, TError,{wordId: number}, TContext> => {
 
 const mutationKey = ['toggleFavorite'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -909,10 +990,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleFavorite>>, {id: number}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleFavorite>>, {wordId: number}> = (props) => {
+          const {wordId} = props ?? {};
 
-          return  toggleFavorite(id,requestOptions)
+          return  toggleFavorite(wordId,requestOptions)
         }
 
 
@@ -927,20 +1008,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ToggleFavoriteMutationError = ErrorType<unknown>
 
     /**
- * @summary Toggle favorite status of a word
+ * @summary Toggle favorite status for a word
  */
 export const useToggleFavorite = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFavorite>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFavorite>>, TError,{wordId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof toggleFavorite>>,
         TError,
-        {id: number},
+        {wordId: number},
         TContext
       > => {
       return useMutation(getToggleFavoriteMutationOptions(options));
     }
 
-export const getListProgressUrl = () => {
+export const getGetUserProgressUrl = () => {
 
 
 
@@ -949,11 +1030,11 @@ export const getListProgressUrl = () => {
 }
 
 /**
- * @summary Get all word progress for the user
+ * @summary Get all word progress for the current user
  */
-export const listProgress = async ( options?: RequestInit): Promise<WordProgress[]> => {
+export const getUserProgress = async ( options?: RequestInit): Promise<WordProgress[]> => {
 
-  return customFetch<WordProgress[]>(getListProgressUrl(),
+  return customFetch<WordProgress[]>(getGetUserProgressUrl(),
   {
     ...options,
     method: 'GET'
@@ -966,45 +1047,45 @@ export const listProgress = async ( options?: RequestInit): Promise<WordProgress
 
 
 
-export const getListProgressQueryKey = () => {
+export const getGetUserProgressQueryKey = () => {
     return [
     `/api/progress`
     ] as const;
     }
 
 
-export const getListProgressQueryOptions = <TData = Awaited<ReturnType<typeof listProgress>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetUserProgressQueryOptions = <TData = Awaited<ReturnType<typeof getUserProgress>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListProgressQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetUserProgressQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProgress>>> = ({ signal }) => listProgress({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserProgress>>> = ({ signal }) => getUserProgress({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProgress>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUserProgress>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type ListProgressQueryResult = NonNullable<Awaited<ReturnType<typeof listProgress>>>
-export type ListProgressQueryError = ErrorType<unknown>
+export type GetUserProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getUserProgress>>>
+export type GetUserProgressQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get all word progress for the user
+ * @summary Get all word progress for the current user
  */
 
-export function useListProgress<TData = Awaited<ReturnType<typeof listProgress>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetUserProgress<TData = Awaited<ReturnType<typeof getUserProgress>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListProgressQueryOptions(options)
+  const queryOptions = getGetUserProgressQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1017,7 +1098,7 @@ export function useListProgress<TData = Awaited<ReturnType<typeof listProgress>>
 
 
 
-export const getListGameSessionsUrl = () => {
+export const getGetGameSessionsUrl = () => {
 
 
 
@@ -1026,11 +1107,11 @@ export const getListGameSessionsUrl = () => {
 }
 
 /**
- * @summary Get recent game sessions
+ * @summary Get recent game sessions for the current user
  */
-export const listGameSessions = async ( options?: RequestInit): Promise<GameSession[]> => {
+export const getGameSessions = async ( options?: RequestInit): Promise<GameSession[]> => {
 
-  return customFetch<GameSession[]>(getListGameSessionsUrl(),
+  return customFetch<GameSession[]>(getGetGameSessionsUrl(),
   {
     ...options,
     method: 'GET'
@@ -1043,45 +1124,45 @@ export const listGameSessions = async ( options?: RequestInit): Promise<GameSess
 
 
 
-export const getListGameSessionsQueryKey = () => {
+export const getGetGameSessionsQueryKey = () => {
     return [
     `/api/games/sessions`
     ] as const;
     }
 
 
-export const getListGameSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listGameSessions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGameSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetGameSessionsQueryOptions = <TData = Awaited<ReturnType<typeof getGameSessions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGameSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListGameSessionsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetGameSessionsQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGameSessions>>> = ({ signal }) => listGameSessions({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGameSessions>>> = ({ signal }) => getGameSessions({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGameSessions>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGameSessions>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type ListGameSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listGameSessions>>>
-export type ListGameSessionsQueryError = ErrorType<unknown>
+export type GetGameSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof getGameSessions>>>
+export type GetGameSessionsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get recent game sessions
+ * @summary Get recent game sessions for the current user
  */
 
-export function useListGameSessions<TData = Awaited<ReturnType<typeof listGameSessions>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGameSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetGameSessions<TData = Awaited<ReturnType<typeof getGameSessions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGameSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListGameSessionsQueryOptions(options)
+  const queryOptions = getGetGameSessionsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1103,7 +1184,7 @@ export const getCreateGameSessionUrl = () => {
 }
 
 /**
- * @summary Save a completed game session score
+ * @summary Save a completed game session
  */
 export const createGameSession = async (gameSessionInput: GameSessionInput, options?: RequestInit): Promise<GameSession> => {
 
@@ -1152,7 +1233,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateGameSessionMutationError = ErrorType<unknown>
 
     /**
- * @summary Save a completed game session score
+ * @summary Save a completed game session
  */
 export const useCreateGameSession = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGameSession>>, TError,{data: BodyType<GameSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1165,27 +1246,20 @@ export const useCreateGameSession = <TError = ErrorType<unknown>,
       return useMutation(getCreateGameSessionMutationOptions(options));
     }
 
-export const getGetCrosswordPuzzleUrl = (params?: GetCrosswordPuzzleParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getGetDailyChallengeGameUrl = () => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/games/crossword?${stringifiedParams}` : `/api/games/crossword`
+  return `/api/games/daily-challenge`
 }
 
 /**
- * @summary Generate a crossword puzzle for a given level
+ * @summary Get today's daily challenge questions
  */
-export const getCrosswordPuzzle = async (params?: GetCrosswordPuzzleParams, options?: RequestInit): Promise<CrosswordPuzzle> => {
+export const getDailyChallengeGame = async ( options?: RequestInit): Promise<DailyChallengeResponse> => {
 
-  return customFetch<CrosswordPuzzle>(getGetCrosswordPuzzleUrl(params),
+  return customFetch<DailyChallengeResponse>(getGetDailyChallengeGameUrl(),
   {
     ...options,
     method: 'GET'
@@ -1198,45 +1272,45 @@ export const getCrosswordPuzzle = async (params?: GetCrosswordPuzzleParams, opti
 
 
 
-export const getGetCrosswordPuzzleQueryKey = (params?: GetCrosswordPuzzleParams,) => {
+export const getGetDailyChallengeGameQueryKey = () => {
     return [
-    `/api/games/crossword`, ...(params ? [params] : [])
+    `/api/games/daily-challenge`
     ] as const;
     }
 
 
-export const getGetCrosswordPuzzleQueryOptions = <TData = Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError = ErrorType<unknown>>(params?: GetCrosswordPuzzleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetDailyChallengeGameQueryOptions = <TData = Awaited<ReturnType<typeof getDailyChallengeGame>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyChallengeGame>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetCrosswordPuzzleQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetDailyChallengeGameQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCrosswordPuzzle>>> = ({ signal }) => getCrosswordPuzzle(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDailyChallengeGame>>> = ({ signal }) => getDailyChallengeGame({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDailyChallengeGame>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type GetCrosswordPuzzleQueryResult = NonNullable<Awaited<ReturnType<typeof getCrosswordPuzzle>>>
-export type GetCrosswordPuzzleQueryError = ErrorType<unknown>
+export type GetDailyChallengeGameQueryResult = NonNullable<Awaited<ReturnType<typeof getDailyChallengeGame>>>
+export type GetDailyChallengeGameQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Generate a crossword puzzle for a given level
+ * @summary Get today's daily challenge questions
  */
 
-export function useGetCrosswordPuzzle<TData = Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError = ErrorType<unknown>>(
- params?: GetCrosswordPuzzleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetDailyChallengeGame<TData = Awaited<ReturnType<typeof getDailyChallengeGame>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyChallengeGame>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetCrosswordPuzzleQueryOptions(params,options)
+  const queryOptions = getGetDailyChallengeGameQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1265,7 +1339,7 @@ export const getGetQuizWordsUrl = (params?: GetQuizWordsParams,) => {
 }
 
 /**
- * @summary Get words for a quiz session
+ * @summary Get quiz questions
  */
 export const getQuizWords = async (params?: GetQuizWordsParams, options?: RequestInit): Promise<QuizQuestion[]> => {
 
@@ -1312,7 +1386,7 @@ export type GetQuizWordsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get words for a quiz session
+ * @summary Get quiz questions
  */
 
 export function useGetQuizWords<TData = Awaited<ReturnType<typeof getQuizWords>>, TError = ErrorType<unknown>>(
@@ -1333,20 +1407,27 @@ export function useGetQuizWords<TData = Awaited<ReturnType<typeof getQuizWords>>
 
 
 
-export const getGetDailyChallengeUrl = () => {
+export const getGetCrosswordPuzzleUrl = (params?: GetCrosswordPuzzleParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/games/daily-challenge`
+  return stringifiedParams.length > 0 ? `/api/games/crossword?${stringifiedParams}` : `/api/games/crossword`
 }
 
 /**
- * @summary Get today's daily challenge words
+ * @summary Get a crossword puzzle
  */
-export const getDailyChallenge = async ( options?: RequestInit): Promise<DailyChallengeResponse> => {
+export const getCrosswordPuzzle = async (params?: GetCrosswordPuzzleParams, options?: RequestInit): Promise<CrosswordPuzzle> => {
 
-  return customFetch<DailyChallengeResponse>(getGetDailyChallengeUrl(),
+  return customFetch<CrosswordPuzzle>(getGetCrosswordPuzzleUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1359,45 +1440,45 @@ export const getDailyChallenge = async ( options?: RequestInit): Promise<DailyCh
 
 
 
-export const getGetDailyChallengeQueryKey = () => {
+export const getGetCrosswordPuzzleQueryKey = (params?: GetCrosswordPuzzleParams,) => {
     return [
-    `/api/games/daily-challenge`
+    `/api/games/crossword`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetDailyChallengeQueryOptions = <TData = Awaited<ReturnType<typeof getDailyChallenge>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetCrosswordPuzzleQueryOptions = <TData = Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError = ErrorType<unknown>>(params?: GetCrosswordPuzzleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDailyChallengeQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetCrosswordPuzzleQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDailyChallenge>>> = ({ signal }) => getDailyChallenge({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCrosswordPuzzle>>> = ({ signal }) => getCrosswordPuzzle(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDailyChallenge>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type GetDailyChallengeQueryResult = NonNullable<Awaited<ReturnType<typeof getDailyChallenge>>>
-export type GetDailyChallengeQueryError = ErrorType<unknown>
+export type GetCrosswordPuzzleQueryResult = NonNullable<Awaited<ReturnType<typeof getCrosswordPuzzle>>>
+export type GetCrosswordPuzzleQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get today's daily challenge words
+ * @summary Get a crossword puzzle
  */
 
-export function useGetDailyChallenge<TData = Awaited<ReturnType<typeof getDailyChallenge>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetCrosswordPuzzle<TData = Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError = ErrorType<unknown>>(
+ params?: GetCrosswordPuzzleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrosswordPuzzle>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetDailyChallengeQueryOptions(options)
+  const queryOptions = getGetCrosswordPuzzleQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1419,7 +1500,7 @@ export const getGetStatsSummaryUrl = () => {
 }
 
 /**
- * @summary Get learning summary stats
+ * @summary Get a summary of the user's learning statistics
  */
 export const getStatsSummary = async ( options?: RequestInit): Promise<StatsSummary> => {
 
@@ -1466,7 +1547,7 @@ export type GetStatsSummaryQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get learning summary stats
+ * @summary Get a summary of the user's learning statistics
  */
 
 export function useGetStatsSummary<TData = Awaited<ReturnType<typeof getStatsSummary>>, TError = ErrorType<unknown>>(
@@ -1496,7 +1577,7 @@ export const getGetLevelStatsUrl = () => {
 }
 
 /**
- * @summary Get progress breakdown by level
+ * @summary Get per-CEFR-level progress
  */
 export const getLevelStats = async ( options?: RequestInit): Promise<LevelStat[]> => {
 
@@ -1543,7 +1624,7 @@ export type GetLevelStatsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get progress breakdown by level
+ * @summary Get per-CEFR-level progress
  */
 
 export function useGetLevelStats<TData = Awaited<ReturnType<typeof getLevelStats>>, TError = ErrorType<unknown>>(
@@ -1552,6 +1633,615 @@ export function useGetLevelStats<TData = Awaited<ReturnType<typeof getLevelStats
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetLevelStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetUserAchievementsUrl = () => {
+
+
+
+
+  return `/api/achievements`
+}
+
+/**
+ * @summary Get the current user's unlocked achievements
+ */
+export const getUserAchievements = async ( options?: RequestInit): Promise<Achievement[]> => {
+
+  return customFetch<Achievement[]>(getGetUserAchievementsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUserAchievementsQueryKey = () => {
+    return [
+    `/api/achievements`
+    ] as const;
+    }
+
+
+export const getGetUserAchievementsQueryOptions = <TData = Awaited<ReturnType<typeof getUserAchievements>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserAchievements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUserAchievementsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserAchievements>>> = ({ signal }) => getUserAchievements({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUserAchievements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUserAchievementsQueryResult = NonNullable<Awaited<ReturnType<typeof getUserAchievements>>>
+export type GetUserAchievementsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current user's unlocked achievements
+ */
+
+export function useGetUserAchievements<TData = Awaited<ReturnType<typeof getUserAchievements>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserAchievements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUserAchievementsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAllAchievementsUrl = () => {
+
+
+
+
+  return `/api/achievements/all`
+}
+
+/**
+ * @summary Get all achievements with locked/unlocked status
+ */
+export const getAllAchievements = async ( options?: RequestInit): Promise<AchievementFull[]> => {
+
+  return customFetch<AchievementFull[]>(getGetAllAchievementsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAllAchievementsQueryKey = () => {
+    return [
+    `/api/achievements/all`
+    ] as const;
+    }
+
+
+export const getGetAllAchievementsQueryOptions = <TData = Awaited<ReturnType<typeof getAllAchievements>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAllAchievements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAllAchievementsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllAchievements>>> = ({ signal }) => getAllAchievements({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAllAchievements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAllAchievementsQueryResult = NonNullable<Awaited<ReturnType<typeof getAllAchievements>>>
+export type GetAllAchievementsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all achievements with locked/unlocked status
+ */
+
+export function useGetAllAchievements<TData = Awaited<ReturnType<typeof getAllAchievements>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAllAchievements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAllAchievementsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetDailyChallengeUrl = () => {
+
+
+
+
+  return `/api/challenges/daily`
+}
+
+/**
+ * @summary Get the daily challenge progress
+ */
+export const getDailyChallenge = async ( options?: RequestInit): Promise<ChallengeProgress> => {
+
+  return customFetch<ChallengeProgress>(getGetDailyChallengeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDailyChallengeQueryKey = () => {
+    return [
+    `/api/challenges/daily`
+    ] as const;
+    }
+
+
+export const getGetDailyChallengeQueryOptions = <TData = Awaited<ReturnType<typeof getDailyChallenge>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDailyChallengeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDailyChallenge>>> = ({ signal }) => getDailyChallenge({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDailyChallenge>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDailyChallengeQueryResult = NonNullable<Awaited<ReturnType<typeof getDailyChallenge>>>
+export type GetDailyChallengeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the daily challenge progress
+ */
+
+export function useGetDailyChallenge<TData = Awaited<ReturnType<typeof getDailyChallenge>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDailyChallengeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetWeeklyChallengeUrl = () => {
+
+
+
+
+  return `/api/challenges/weekly`
+}
+
+/**
+ * @summary Get the weekly challenge progress
+ */
+export const getWeeklyChallenge = async ( options?: RequestInit): Promise<ChallengeProgress> => {
+
+  return customFetch<ChallengeProgress>(getGetWeeklyChallengeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWeeklyChallengeQueryKey = () => {
+    return [
+    `/api/challenges/weekly`
+    ] as const;
+    }
+
+
+export const getGetWeeklyChallengeQueryOptions = <TData = Awaited<ReturnType<typeof getWeeklyChallenge>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeeklyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWeeklyChallengeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWeeklyChallenge>>> = ({ signal }) => getWeeklyChallenge({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWeeklyChallenge>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWeeklyChallengeQueryResult = NonNullable<Awaited<ReturnType<typeof getWeeklyChallenge>>>
+export type GetWeeklyChallengeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the weekly challenge progress
+ */
+
+export function useGetWeeklyChallenge<TData = Awaited<ReturnType<typeof getWeeklyChallenge>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeeklyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWeeklyChallengeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMonthlyChallengeUrl = () => {
+
+
+
+
+  return `/api/challenges/monthly`
+}
+
+/**
+ * @summary Get the monthly challenge progress
+ */
+export const getMonthlyChallenge = async ( options?: RequestInit): Promise<ChallengeProgress> => {
+
+  return customFetch<ChallengeProgress>(getGetMonthlyChallengeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMonthlyChallengeQueryKey = () => {
+    return [
+    `/api/challenges/monthly`
+    ] as const;
+    }
+
+
+export const getGetMonthlyChallengeQueryOptions = <TData = Awaited<ReturnType<typeof getMonthlyChallenge>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonthlyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMonthlyChallengeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMonthlyChallenge>>> = ({ signal }) => getMonthlyChallenge({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMonthlyChallenge>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMonthlyChallengeQueryResult = NonNullable<Awaited<ReturnType<typeof getMonthlyChallenge>>>
+export type GetMonthlyChallengeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the monthly challenge progress
+ */
+
+export function useGetMonthlyChallenge<TData = Awaited<ReturnType<typeof getMonthlyChallenge>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonthlyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMonthlyChallengeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetLeaderboardUrl = () => {
+
+
+
+
+  return `/api/leaderboard`
+}
+
+/**
+ * @summary Get top 20 users by XP
+ */
+export const getLeaderboard = async ( options?: RequestInit): Promise<LeaderboardEntry[]> => {
+
+  return customFetch<LeaderboardEntry[]>(getGetLeaderboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLeaderboardQueryKey = () => {
+    return [
+    `/api/leaderboard`
+    ] as const;
+    }
+
+
+export const getGetLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof getLeaderboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLeaderboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLeaderboard>>> = ({ signal }) => getLeaderboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLeaderboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLeaderboardQueryResult = NonNullable<Awaited<ReturnType<typeof getLeaderboard>>>
+export type GetLeaderboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get top 20 users by XP
+ */
+
+export function useGetLeaderboard<TData = Awaited<ReturnType<typeof getLeaderboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLeaderboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getClaimDailyRewardUrl = () => {
+
+
+
+
+  return `/api/daily-reward`
+}
+
+/**
+ * @summary Claim daily login reward (once per day)
+ */
+export const claimDailyReward = async ( options?: RequestInit): Promise<DailyRewardResult> => {
+
+  return customFetch<DailyRewardResult>(getClaimDailyRewardUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClaimDailyRewardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimDailyReward>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimDailyReward>>, TError,void, TContext> => {
+
+const mutationKey = ['claimDailyReward'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimDailyReward>>, void> = () => {
+
+
+          return  claimDailyReward(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClaimDailyRewardMutationResult = NonNullable<Awaited<ReturnType<typeof claimDailyReward>>>
+
+    export type ClaimDailyRewardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Claim daily login reward (once per day)
+ */
+export const useClaimDailyReward = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimDailyReward>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof claimDailyReward>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getClaimDailyRewardMutationOptions(options));
+    }
+
+export const getGetDailyRewardStatusUrl = () => {
+
+
+
+
+  return `/api/daily-reward/status`
+}
+
+/**
+ * @summary Check if today's reward has been claimed
+ */
+export const getDailyRewardStatus = async ( options?: RequestInit): Promise<DailyRewardStatusResult> => {
+
+  return customFetch<DailyRewardStatusResult>(getGetDailyRewardStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDailyRewardStatusQueryKey = () => {
+    return [
+    `/api/daily-reward/status`
+    ] as const;
+    }
+
+
+export const getGetDailyRewardStatusQueryOptions = <TData = Awaited<ReturnType<typeof getDailyRewardStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyRewardStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDailyRewardStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDailyRewardStatus>>> = ({ signal }) => getDailyRewardStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDailyRewardStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDailyRewardStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getDailyRewardStatus>>>
+export type GetDailyRewardStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check if today's reward has been claimed
+ */
+
+export function useGetDailyRewardStatus<TData = Awaited<ReturnType<typeof getDailyRewardStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyRewardStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDailyRewardStatusQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

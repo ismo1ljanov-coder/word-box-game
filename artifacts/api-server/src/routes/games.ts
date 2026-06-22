@@ -4,6 +4,7 @@ import { wordsTable, gameSessionsTable } from "@workspace/db";
 import { GetCrosswordPuzzleQueryParams, GetQuizWordsQueryParams, CreateGameSessionBody } from "@workspace/api-zod";
 import { eq, sql, and, gte } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
+import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
 
 const router = Router();
 
@@ -43,6 +44,11 @@ router.post("/games/sessions", requireAuth, async (req, res) => {
     .insert(gameSessionsTable)
     .values({ ...parsed.data, userId, coinsEarned })
     .returning();
+
+  const xpEarned = parsed.data.correctAnswers * 10 + 5;
+  await recordActivity(userId);
+  await awardXp(userId, xpEarned, coinsEarned);
+  await checkAndAwardAchievements(userId);
 
   res.status(201).json({
     id: session.id,

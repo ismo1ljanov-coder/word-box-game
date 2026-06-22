@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { wordProgressTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
+import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.get("/progress", requireAuth, async (req, res) => {
       learned: p.learned,
       practiceCount: p.practiceCount,
       score: p.score,
+      isFavorite: p.isFavorite,
     }))
   );
 });

@@ -72,7 +72,7 @@ export default function FlashcardGame() {
     const word = words[currentIdx];
     if (!markedLearned.has(word.wordId)) {
       setMarkedLearned(prev => new Set(prev).add(word.wordId));
-      markProgress.mutate({ id: word.wordId, data: { correct: true, gameType: "flashcard" } });
+      markProgress.mutate({ wordId: word.wordId, data: { correct: true, gameType: "flashcard" } });
     }
     nextCard();
   };

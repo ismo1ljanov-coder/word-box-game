@@ -5,6 +5,7 @@ import { usersTable, passwordResetCodesTable } from "@workspace/db";
 import { eq, and, gt } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "../lib/logger";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
@@ -27,6 +28,16 @@ const forgotPasswordSchema = z.object({
 const resetPasswordSchema = z.object({
   phone: z.string().min(9).max(20),
   code: z.string().length(6),
+  newPassword: z.string().min(6).max(100),
+});
+
+const updateProfileSchema = z.object({
+  fullName: z.string().min(2).max(100).optional(),
+  dailyGoalTarget: z.number().int().refine((n) => [10, 20, 30, 50].includes(n)).optional(),
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
   newPassword: z.string().min(6).max(100),
 });
 
@@ -211,6 +222,63 @@ router.post("/auth/reset-password", async (req, res) => {
   await db.update(passwordResetCodesTable).set({ used: true }).where(eq(passwordResetCodesTable.id, resetCode.id));
 
   res.json({ ok: true, message: "Parol muvaffaqiyatli yangilandi" });
+});
+
+router.patch("/profile", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
+  const parsed = updateProfileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Ma'lumotlar noto'g'ri" });
+    return;
+  }
+
+  const updates: Partial<typeof usersTable.$inferInsert> = {};
+  if (parsed.data.fullName !== undefined) updates.fullName = parsed.data.fullName;
+  if (parsed.data.dailyGoalTarget !== undefined) updates.dailyGoalTarget = parsed.data.dailyGoalTarget;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "O'zgartirish uchun ma'lumot yo'q" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(usersTable.id, userId))
+    .returning();
+
+  res.json({
+    id: updated.id,
+    fullName: updated.fullName,
+    dailyGoalTarget: updated.dailyGoalTarget,
+  });
+});
+
+router.patch("/profile/password", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
+  const parsed = changePasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Ma'lumotlar noto'g'ri" });
+    return;
+  }
+
+  const { currentPassword, newPassword } = parsed.data;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "Foydalanuvchi topilmadi" });
+    return;
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) {
+    res.status(401).json({ error: "Joriy parol noto'g'ri" });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await db.update(usersTable).set({ passwordHash, updatedAt: new Date() }).where(eq(usersTable.id, userId));
+
+  res.json({ ok: true });
 });
 
 export default router;
