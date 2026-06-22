@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useGetDailyChallenge, useCreateGameSession } from "@workspace/api-client-react";
+import { useGetDailyChallengeGame, useCreateGameSession } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -18,7 +18,7 @@ type Question = {
 type AnswerState = "idle" | "correct" | "wrong";
 
 export default function DailyChallenge() {
-  const { data, isLoading } = useGetDailyChallenge();
+  const { data, isLoading } = useGetDailyChallengeGame();
   const createSession = useCreateGameSession();
 
   const [currentIndex, setCurrentIndex] = useState(0);
