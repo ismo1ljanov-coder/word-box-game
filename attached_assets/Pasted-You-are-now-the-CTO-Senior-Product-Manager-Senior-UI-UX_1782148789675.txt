@@ -1,0 +1,320 @@
+You are now the CTO, Senior Product Manager, Senior UI/UX Designer and Senior QA Engineer of this project.
+
+The MVP is complete.
+
+Do NOT rebuild the project.
+
+Do NOT remove any existing functionality.
+
+Your task is to transform the current MVP into a production-ready application.
+
+Before changing anything:
+1. Analyze the whole project.
+2. Find bugs.
+3. Find duplicated code.
+4. Improve architecture.
+5. Improve performance.
+6. Keep everything compatible.
+
+========================
+AUTHENTICATION
+========================
+
+Create a secure authentication system.
+
+- Phone number + password login
+- Register
+- Login
+- Logout
+- Forgot password
+- Remember login
+- Secure password hashing
+- Session management
+
+========================
+PROFILE
+========================
+
+Create a professional profile page.
+
+Include:
+
+Profile picture
+
+Username
+
+Phone number
+
+Current CEFR Level
+
+Current XP
+
+Current Streak
+
+Longest Streak
+
+Words Learned
+
+Words Remaining
+
+Mastered Words
+
+Favorite Words
+
+Subscription Status
+
+Achievements
+
+Badges
+
+Daily Goal
+
+Learning Calendar
+
+Settings
+
+========================
+ADMIN PANEL
+========================
+
+Create a secure admin dashboard.
+
+Admin can:
+
+View dashboard
+
+View total users
+
+View online users
+
+View premium users
+
+View active users
+
+Search users
+
+Edit users
+
+Delete users
+
+Ban users
+
+Reset progress
+
+Grant Premium
+
+Upload vocabulary
+
+Import CSV
+
+Export CSV
+
+View analytics
+
+========================
+ANALYTICS
+========================
+
+Track:
+
+Daily Active Users
+
+Weekly Active Users
+
+Monthly Active Users
+
+Average Session Time
+
+Most Learned Words
+
+Most Searched Words
+
+Most Difficult Words
+
+Level Completion
+
+Retention Rate
+
+========================
+USER EXPERIENCE
+========================
+
+Improve everything.
+
+Smooth animations.
+
+Responsive design.
+
+Dark Mode.
+
+Loading animations.
+
+Empty states.
+
+Error states.
+
+Offline support (PWA).
+
+Fast loading.
+
+Beautiful onboarding.
+
+========================
+GAMIFICATION
+========================
+
+XP
+
+Coins
+
+Achievements
+
+Daily Reward
+
+Daily Challenge
+
+Weekly Challenge
+
+Monthly Challenge
+
+Leaderboards
+
+Bronze
+
+Silver
+
+Gold
+
+Diamond
+
+Master
+
+========================
+BUSINESS MODEL
+========================
+
+FREE
+
+Unlimited Registration
+
+Unlimited Search
+
+A1
+
+A2
+
+20 new words/day
+
+Basic Games
+
+Progress Tracking
+
+Maximum 3 ads/day
+
+Ads only between learning sessions
+
+Never interrupt learning.
+
+PREMIUM
+
+49,000 UZS/month
+
+No Ads
+
+Unlimited Learning
+
+B1
+
+B2
+
+Statistics
+
+Favorites
+
+Revision
+
+Advanced Games
+
+PRO
+
+99,000 UZS/month
+
+Everything included
+
+C1
+
+C2
+
+Academic Vocabulary
+
+Business Vocabulary
+
+Advanced Spelling
+
+AI Recommendations
+
+========================
+SECURITY
+========================
+
+Protect routes.
+
+Protect admin panel.
+
+Validate every request.
+
+Sanitize inputs.
+
+Prevent SQL Injection.
+
+Prevent XSS.
+
+========================
+PERFORMANCE
+========================
+
+Optimize everything.
+
+Reduce unnecessary rendering.
+
+Optimize database.
+
+Lazy loading.
+
+Caching.
+
+Compress assets.
+
+========================
+CODE QUALITY
+========================
+
+Clean architecture.
+
+Reusable components.
+
+Scalable project structure.
+
+Well documented.
+
+========================
+FINAL TASK
+========================
+
+When everything is finished:
+
+Run a complete QA review.
+
+Find every bug.
+
+Fix every bug.
+
+Check mobile responsiveness.
+
+Check desktop responsiveness.
+
+Check accessibility.
+
+Make the application production-ready.
+
+Do not stop until every page looks professional.
