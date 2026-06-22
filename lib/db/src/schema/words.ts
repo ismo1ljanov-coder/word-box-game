@@ -1,9 +1,10 @@
 import { pgTable, text, serial, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const levelEnum = pgEnum("level", ["A1", "A2", "B1", "B2", "C1", "C2"]);
-export const gameTypeEnum = pgEnum("game_type", ["quiz", "crossword", "flashcard", "matching", "spelling", "daily_challenge"]);
+export const gameTypeEnum = pgEnum("game_type", ["quiz", "crossword", "flashcard", "matching", "spelling", "daily_challenge", "anagram", "speed_quiz"]);
 
 export const wordsTable = pgTable("words", {
   id: serial("id").primaryKey(),
@@ -19,6 +20,7 @@ export const wordsTable = pgTable("words", {
 
 export const wordProgressTable = pgTable("word_progress", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   wordId: integer("word_id").notNull().references(() => wordsTable.id),
   learned: boolean("learned").notNull().default(false),
   practiceCount: integer("practice_count").notNull().default(0),
@@ -29,6 +31,7 @@ export const wordProgressTable = pgTable("word_progress", {
 
 export const gameSessionsTable = pgTable("game_sessions", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   gameType: gameTypeEnum("game_type").notNull(),
   level: levelEnum("level").notNull(),
   score: integer("score").notNull(),

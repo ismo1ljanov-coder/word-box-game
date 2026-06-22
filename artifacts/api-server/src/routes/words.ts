@@ -3,10 +3,12 @@ import { db } from "@workspace/db";
 import { wordsTable, wordProgressTable } from "@workspace/db";
 import { ListWordsQueryParams, GetWordParams, MarkWordProgressParams, MarkWordProgressBody, ToggleFavoriteParams } from "@workspace/api-zod";
 import { eq, and, ilike, sql } from "drizzle-orm";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-router.get("/words/favorites", async (_req, res) => {
+router.get("/words/favorites", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
   const favorites = await db
     .select({
       id: wordsTable.id,
@@ -24,7 +26,7 @@ router.get("/words/favorites", async (_req, res) => {
       isFavorite: wordProgressTable.isFavorite,
     })
     .from(wordsTable)
-    .innerJoin(wordProgressTable, eq(wordProgressTable.wordId, wordsTable.id))
+    .innerJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
     .where(eq(wordProgressTable.isFavorite, true))
     .orderBy(wordsTable.word);
 
@@ -39,7 +41,8 @@ router.get("/words/favorites", async (_req, res) => {
   );
 });
 
-router.get("/words", async (req, res) => {
+router.get("/words", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
   const parsed = ListWordsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid query params" });
@@ -78,7 +81,7 @@ router.get("/words", async (req, res) => {
       isFavorite: wordProgressTable.isFavorite,
     })
     .from(wordsTable)
-    .leftJoin(wordProgressTable, eq(wordProgressTable.wordId, wordsTable.id))
+    .leftJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
     .where(whereClause)
     .orderBy(wordsTable.level, wordsTable.word)
     .limit(pageSize)
@@ -98,7 +101,8 @@ router.get("/words", async (req, res) => {
   });
 });
 
-router.get("/words/:id", async (req, res) => {
+router.get("/words/:id", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
   const parsed = GetWordParams.safeParse(req.params);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid params" });
@@ -122,7 +126,7 @@ router.get("/words/:id", async (req, res) => {
       isFavorite: wordProgressTable.isFavorite,
     })
     .from(wordsTable)
-    .leftJoin(wordProgressTable, eq(wordProgressTable.wordId, wordsTable.id))
+    .leftJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
     .where(eq(wordsTable.id, parsed.data.id));
 
   if (!row) {
@@ -138,7 +142,8 @@ router.get("/words/:id", async (req, res) => {
   });
 });
 
-router.post("/words/:id/progress", async (req, res) => {
+router.post("/words/:id/progress", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
   const paramsParsed = MarkWordProgressParams.safeParse(req.params);
   const bodyParsed = MarkWordProgressBody.safeParse(req.body);
 
@@ -150,7 +155,10 @@ router.post("/words/:id/progress", async (req, res) => {
   const { id } = paramsParsed.data;
   const { correct } = bodyParsed.data;
 
-  const [existing] = await db.select().from(wordProgressTable).where(eq(wordProgressTable.wordId, id));
+  const [existing] = await db
+    .select()
+    .from(wordProgressTable)
+    .where(and(eq(wordProgressTable.wordId, id), eq(wordProgressTable.userId, userId)));
 
   if (existing) {
     const newScore = correct ? Math.min(100, existing.score + 10) : Math.max(0, existing.score - 5);
@@ -160,7 +168,7 @@ router.post("/words/:id/progress", async (req, res) => {
     const [updated] = await db
       .update(wordProgressTable)
       .set({ score: newScore, practiceCount: newCount, learned, updatedAt: new Date() })
-      .where(eq(wordProgressTable.wordId, id))
+      .where(and(eq(wordProgressTable.wordId, id), eq(wordProgressTable.userId, userId)))
       .returning();
 
     res.json({
@@ -174,7 +182,7 @@ router.post("/words/:id/progress", async (req, res) => {
     const score = correct ? 10 : 0;
     const [created] = await db
       .insert(wordProgressTable)
-      .values({ wordId: id, learned: false, practiceCount: 1, score, isFavorite: false })
+      .values({ userId, wordId: id, learned: false, practiceCount: 1, score, isFavorite: false })
       .returning();
 
     res.json({
@@ -187,7 +195,8 @@ router.post("/words/:id/progress", async (req, res) => {
   }
 });
 
-router.post("/words/:id/favorite", async (req, res) => {
+router.post("/words/:id/favorite", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
   const parsed = ToggleFavoriteParams.safeParse(req.params);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid params" });
@@ -195,19 +204,22 @@ router.post("/words/:id/favorite", async (req, res) => {
   }
 
   const { id } = parsed.data;
-  const [existing] = await db.select().from(wordProgressTable).where(eq(wordProgressTable.wordId, id));
+  const [existing] = await db
+    .select()
+    .from(wordProgressTable)
+    .where(and(eq(wordProgressTable.wordId, id), eq(wordProgressTable.userId, userId)));
 
   if (existing) {
     const [updated] = await db
       .update(wordProgressTable)
       .set({ isFavorite: !existing.isFavorite, updatedAt: new Date() })
-      .where(eq(wordProgressTable.wordId, id))
+      .where(and(eq(wordProgressTable.wordId, id), eq(wordProgressTable.userId, userId)))
       .returning();
     res.json({ wordId: id, isFavorite: updated.isFavorite });
   } else {
     const [created] = await db
       .insert(wordProgressTable)
-      .values({ wordId: id, learned: false, practiceCount: 0, score: 0, isFavorite: true })
+      .values({ userId, wordId: id, learned: false, practiceCount: 0, score: 0, isFavorite: true })
       .returning();
     res.json({ wordId: id, isFavorite: created.isFavorite });
   }

@@ -3,10 +3,59 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
 export interface HealthStatus {
   status: string;
+}
+
+export type AuthUserSubscriptionTier = typeof AuthUserSubscriptionTier[keyof typeof AuthUserSubscriptionTier];
+
+
+export const AuthUserSubscriptionTier = {
+  free: 'free',
+  premium: 'premium',
+  pro: 'pro',
+} as const;
+
+export interface AuthUser {
+  id: number;
+  phone: string;
+  fullName: string;
+  isAdmin: boolean;
+  subscriptionTier: AuthUserSubscriptionTier;
+}
+
+export interface RegisterInput {
+  phone: string;
+  fullName: string;
+  password: string;
+}
+
+export interface LoginInput {
+  phone: string;
+  password: string;
+  rememberMe?: boolean;
+}
+
+export interface ForgotPasswordInput {
+  phone: string;
+}
+
+export interface ForgotPasswordResult {
+  ok: boolean;
+  message: string;
+  /**
+     * Dev mode only — the 6-digit reset code
+     * @nullable
+     */
+  code?: string | null;
+}
+
+export interface ResetPasswordInput {
+  phone: string;
+  code: string;
+  newPassword: string;
 }
 
 export type WordLevel = typeof WordLevel[keyof typeof WordLevel];
@@ -67,7 +116,7 @@ export interface ProgressInput {
   gameType?: string | null;
 }
 
-export interface ToggleFavoriteResponse {
+export interface FavoriteToggleResult {
   wordId: number;
   isFavorite: boolean;
 }
@@ -82,6 +131,8 @@ export const GameSessionGameType = {
   matching: 'matching',
   spelling: 'spelling',
   daily_challenge: 'daily_challenge',
+  anagram: 'anagram',
+  speed_quiz: 'speed_quiz',
 } as const;
 
 export type GameSessionLevel = typeof GameSessionLevel[keyof typeof GameSessionLevel];
@@ -117,6 +168,8 @@ export const GameSessionInputGameType = {
   matching: 'matching',
   spelling: 'spelling',
   daily_challenge: 'daily_challenge',
+  anagram: 'anagram',
+  speed_quiz: 'speed_quiz',
 } as const;
 
 export type GameSessionInputLevel = typeof GameSessionInputLevel[keyof typeof GameSessionInputLevel];
@@ -203,6 +256,14 @@ export interface LevelStat {
   learnedWords: number;
   percentage: number;
 }
+
+export type Logout200 = {
+  ok: boolean;
+};
+
+export type ResetPassword200 = {
+  ok: boolean;
+};
 
 export type ListWordsParams = {
 /**

@@ -3,13 +3,16 @@ import { db } from "@workspace/db";
 import { wordsTable, gameSessionsTable } from "@workspace/db";
 import { GetCrosswordPuzzleQueryParams, GetQuizWordsQueryParams, CreateGameSessionBody } from "@workspace/api-zod";
 import { eq, sql, and, gte } from "drizzle-orm";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-router.get("/games/sessions", async (_req, res) => {
+router.get("/games/sessions", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
   const sessions = await db
     .select()
     .from(gameSessionsTable)
+    .where(eq(gameSessionsTable.userId, userId))
     .orderBy(sql`${gameSessionsTable.createdAt} desc`)
     .limit(20);
 
@@ -21,12 +24,14 @@ router.get("/games/sessions", async (_req, res) => {
       score: s.score,
       totalQuestions: s.totalQuestions,
       correctAnswers: s.correctAnswers,
+      coinsEarned: s.coinsEarned,
       createdAt: s.createdAt?.toISOString() ?? new Date().toISOString(),
     }))
   );
 });
 
-router.post("/games/sessions", async (req, res) => {
+router.post("/games/sessions", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
   const parsed = CreateGameSessionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid body" });
@@ -36,7 +41,7 @@ router.post("/games/sessions", async (req, res) => {
   const coinsEarned = parsed.data.correctAnswers * 2 + (parsed.data.correctAnswers === parsed.data.totalQuestions ? 10 : 0);
   const [session] = await db
     .insert(gameSessionsTable)
-    .values({ ...parsed.data, coinsEarned })
+    .values({ ...parsed.data, userId, coinsEarned })
     .returning();
 
   res.status(201).json({
@@ -51,7 +56,8 @@ router.post("/games/sessions", async (req, res) => {
   });
 });
 
-router.get("/games/daily-challenge", async (_req, res) => {
+router.get("/games/daily-challenge", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
   const BONUS_COINS = 50;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -63,6 +69,7 @@ router.get("/games/daily-challenge", async (_req, res) => {
     .from(gameSessionsTable)
     .where(
       and(
+        eq(gameSessionsTable.userId, userId),
         eq(gameSessionsTable.gameType, "daily_challenge"),
         gte(gameSessionsTable.createdAt, today)
       )
@@ -102,7 +109,7 @@ router.get("/games/daily-challenge", async (_req, res) => {
   });
 });
 
-router.get("/games/quiz", async (req, res) => {
+router.get("/games/quiz", requireAuth, async (req, res) => {
   const parsed = GetQuizWordsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid query params" });
@@ -144,7 +151,7 @@ router.get("/games/quiz", async (req, res) => {
   res.json(questions);
 });
 
-router.get("/games/crossword", async (req, res) => {
+router.get("/games/crossword", requireAuth, async (req, res) => {
   const parsed = GetCrosswordPuzzleQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid query params" });

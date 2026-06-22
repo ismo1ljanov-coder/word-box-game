@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
 import * as zod from 'zod';
 
@@ -13,6 +13,82 @@ import * as zod from 'zod';
  */
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
+})
+
+
+/**
+ * @summary Register a new user
+ */
+export const RegisterBody = zod.object({
+  "phone": zod.string(),
+  "fullName": zod.string(),
+  "password": zod.string()
+})
+
+
+/**
+ * @summary Login with phone and password
+ */
+export const LoginBody = zod.object({
+  "phone": zod.string(),
+  "password": zod.string(),
+  "rememberMe": zod.boolean().optional()
+})
+
+export const LoginResponse = zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "fullName": zod.string(),
+  "isAdmin": zod.boolean(),
+  "subscriptionTier": zod.enum(['free', 'premium', 'pro'])
+})
+
+
+/**
+ * @summary Log out and destroy session
+ */
+export const LogoutResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetMeResponse = zod.object({
+  "id": zod.number(),
+  "phone": zod.string(),
+  "fullName": zod.string(),
+  "isAdmin": zod.boolean(),
+  "subscriptionTier": zod.enum(['free', 'premium', 'pro'])
+})
+
+
+/**
+ * @summary Request a password reset code
+ */
+export const ForgotPasswordBody = zod.object({
+  "phone": zod.string()
+})
+
+export const ForgotPasswordResponse = zod.object({
+  "ok": zod.boolean(),
+  "message": zod.string(),
+  "code": zod.string().nullish().describe('Dev mode only — the 6-digit reset code')
+})
+
+
+/**
+ * @summary Reset password using a code
+ */
+export const ResetPasswordBody = zod.object({
+  "phone": zod.string(),
+  "code": zod.string(),
+  "newPassword": zod.string()
+})
+
+export const ResetPasswordResponse = zod.object({
+  "ok": zod.boolean()
 })
 
 
@@ -146,7 +222,7 @@ export const ListProgressResponse = zod.array(ListProgressResponseItem)
  */
 export const ListGameSessionsResponseItem = zod.object({
   "id": zod.number(),
-  "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling', 'daily_challenge']),
+  "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling', 'daily_challenge', 'anagram', 'speed_quiz']),
   "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   "score": zod.number(),
   "totalQuestions": zod.number(),
@@ -161,7 +237,7 @@ export const ListGameSessionsResponse = zod.array(ListGameSessionsResponseItem)
  * @summary Save a completed game session score
  */
 export const CreateGameSessionBody = zod.object({
-  "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling', 'daily_challenge']),
+  "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling', 'daily_challenge', 'anagram', 'speed_quiz']),
   "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   "score": zod.number(),
   "totalQuestions": zod.number(),

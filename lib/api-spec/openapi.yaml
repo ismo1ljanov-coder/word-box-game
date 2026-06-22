@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Api
-  version: 0.2.0
+  version: 0.3.0
   description: Wordbox API - English vocabulary learning platform
 servers:
   - url: /api
@@ -9,6 +9,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
   - name: words
     description: Vocabulary word operations
   - name: progress
@@ -30,6 +32,124 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "409":
+          description: Phone already registered
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with phone and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out and destroy session
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get the currently authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Request a password reset code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordInput"
+      responses:
+        "200":
+          description: Code sent (dev mode returns code in response)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForgotPasswordResult"
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Reset password using a code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "200":
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "400":
+          description: Invalid or expired code
 
   /words:
     get:
@@ -143,7 +263,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ToggleFavoriteResponse"
+                $ref: "#/components/schemas/FavoriteToggleResult"
 
   /progress:
     get:
@@ -287,6 +407,74 @@ components:
         status:
           type: string
 
+    AuthUser:
+      type: object
+      required: [id, phone, fullName, isAdmin, subscriptionTier]
+      properties:
+        id:
+          type: integer
+        phone:
+          type: string
+        fullName:
+          type: string
+        isAdmin:
+          type: boolean
+        subscriptionTier:
+          type: string
+          enum: [free, premium, pro]
+
+    RegisterInput:
+      type: object
+      required: [phone, fullName, password]
+      properties:
+        phone:
+          type: string
+        fullName:
+          type: string
+        password:
+          type: string
+
+    LoginInput:
+      type: object
+      required: [phone, password]
+      properties:
+        phone:
+          type: string
+        password:
+          type: string
+        rememberMe:
+          type: boolean
+
+    ForgotPasswordInput:
+      type: object
+      required: [phone]
+      properties:
+        phone:
+          type: string
+
+    ForgotPasswordResult:
+      type: object
+      required: [ok, message]
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        code:
+          type: ["string", "null"]
+          description: Dev mode only — the 6-digit reset code
+
+    ResetPasswordInput:
+      type: object
+      required: [phone, code, newPassword]
+      properties:
+        phone:
+          type: string
+        code:
+          type: string
+        newPassword:
+          type: string
+
     Word:
       type: object
       required: [id, word, translation, level, category]
@@ -366,7 +554,7 @@ components:
         gameType:
           type: ["string", "null"]
 
-    ToggleFavoriteResponse:
+    FavoriteToggleResult:
       type: object
       required: [wordId, isFavorite]
       properties:
@@ -383,7 +571,7 @@ components:
           type: integer
         gameType:
           type: string
-          enum: [quiz, crossword, flashcard, matching, spelling, daily_challenge]
+          enum: [quiz, crossword, flashcard, matching, spelling, daily_challenge, anagram, speed_quiz]
         level:
           type: string
           enum: [A1, A2, B1, B2, C1, C2]
@@ -404,7 +592,7 @@ components:
       properties:
         gameType:
           type: string
-          enum: [quiz, crossword, flashcard, matching, spelling, daily_challenge]
+          enum: [quiz, crossword, flashcard, matching, spelling, daily_challenge, anagram, speed_quiz]
         level:
           type: string
           enum: [A1, A2, B1, B2, C1, C2]

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
 import type { GetCrosswordPuzzleLevel } from './getCrosswordPuzzleLevel';
 
