@@ -678,7 +678,7 @@ export const GetAdminAnalyticsResponse = zod.object({
 }).passthrough()),
   "avgSessionScore": zod.number(),
   "avgCorrectRate": zod.number(),
-  "avgSessionDuration": zod.number().describe('Average session duration in seconds (null when no sessions with duration)'),
+  "avgSessionDuration": zod.number().nullish().describe('Average session duration in seconds (null when no sessions with duration)'),
   "eventCounts": zod.array(zod.object({
   "eventType": zod.string().optional(),
   "count": zod.number().optional()

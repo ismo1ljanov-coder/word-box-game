@@ -4,6 +4,7 @@ import { dailyRewardsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 import { awardXp, recordActivity } from "../lib/activity";
+import { logEvent } from "../middleware/analytics";
 
 const router = Router();
 
@@ -30,6 +31,7 @@ router.post("/daily-reward", requireAuth, async (req, res) => {
   await db.insert(dailyRewardsTable).values({ userId, claimedDate: today, coinsEarned });
   await recordActivity(userId);
   await awardXp(userId, 5, coinsEarned);
+  logEvent(userId, "daily_reward_claimed", { date: today, coinsEarned });
 
   res.json({ alreadyClaimed: false, coinsEarned });
 });

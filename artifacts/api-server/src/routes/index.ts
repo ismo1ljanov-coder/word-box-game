@@ -10,6 +10,7 @@ import challengesRouter from "./challenges";
 import leaderboardRouter from "./leaderboard";
 import dailyRewardRouter from "./daily-reward";
 import adminRouter from "./admin";
+import analyticsRouter from "./analytics";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(challengesRouter);
 router.use(leaderboardRouter);
 router.use(dailyRewardRouter);
 router.use(adminRouter);
+router.use(analyticsRouter);
 
 export default router;

@@ -476,8 +476,11 @@ export interface AdminAnalytics {
   levelRates: AdminAnalyticsLevelRatesItem[];
   avgSessionScore: number;
   avgCorrectRate: number;
-  /** Average session duration in seconds (null when no sessions with duration) */
-  avgSessionDuration: number;
+  /**
+     * Average session duration in seconds (null when no sessions with duration)
+     * @nullable
+     */
+  avgSessionDuration?: number | null;
   eventCounts: AdminAnalyticsEventCountsItem[];
 }
 

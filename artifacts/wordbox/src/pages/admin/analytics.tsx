@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend
 } from "recharts";
-import { TrendingUp, Users, Activity } from "lucide-react";
+import { TrendingUp, Users, Activity, Clock, Target, Zap } from "lucide-react";
 
 interface AnalyticsData {
   dau: number;
@@ -16,6 +16,8 @@ interface AnalyticsData {
   levelRates: { level: string; totalWords: number; learnedWords: number }[];
   avgSessionScore: number;
   avgCorrectRate: number;
+  avgSessionDuration: number | null;
+  eventCounts: { eventType: string; count: number }[];
 }
 
 async function fetchAnalytics(): Promise<AnalyticsData> {
@@ -62,6 +64,47 @@ export default function AdminAnalytics() {
                 <s.icon className={`w-5 h-5 ${s.color}`} />
               </div>
               <p className="text-3xl font-black">{s.value.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Session metrics */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          {
+            icon: Target,
+            label: "O'rtacha sessiya bali",
+            value: `${data.avgSessionScore}/100`,
+            color: "text-amber-500",
+            bg: "bg-amber-500/10",
+          },
+          {
+            icon: Zap,
+            label: "O'rtacha to'g'ri javoblar",
+            value: `${data.avgCorrectRate}%`,
+            color: "text-emerald-500",
+            bg: "bg-emerald-500/10",
+          },
+          {
+            icon: Clock,
+            label: "O'rtacha sessiya davomiyligi",
+            value: data.avgSessionDuration != null
+              ? data.avgSessionDuration >= 60
+                ? `${Math.floor(data.avgSessionDuration / 60)}m ${data.avgSessionDuration % 60}s`
+                : `${data.avgSessionDuration}s`
+              : "—",
+            color: "text-sky-500",
+            bg: "bg-sky-500/10",
+          },
+        ].map((s) => (
+          <Card key={s.label} className="rounded-2xl border-none shadow-sm">
+            <CardContent className="p-5">
+              <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
+                <s.icon className={`w-5 h-5 ${s.color}`} />
+              </div>
+              <p className="text-2xl font-black">{s.value}</p>
               <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
             </CardContent>
           </Card>
@@ -121,6 +164,29 @@ export default function AdminAnalytics() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Event counts */}
+      {data.eventCounts.length > 0 && (
+        <Card className="rounded-2xl border-none shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-bold">Hodisalar soni (so'nggi 30 kun)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={data.eventCounts} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="eventType" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                  formatter={(v) => [v, "Soni"]}
+                />
+                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Top learned words */}

@@ -1470,7 +1470,7 @@ components:
 
     AdminAnalytics:
       type: object
-      required: [dau, wau, mau, dauTrend, topLearned, hardestWords, levelRates, avgSessionScore, avgCorrectRate, avgSessionDuration, eventCounts]
+      required: [dau, wau, mau, dauTrend, topLearned, hardestWords, levelRates, avgSessionScore, avgCorrectRate, eventCounts]
       properties:
         dau:
           type: integer
@@ -1499,7 +1499,7 @@ components:
         avgCorrectRate:
           type: integer
         avgSessionDuration:
-          type: integer
+          type: ["integer", "null"]
           description: Average session duration in seconds (null when no sessions with duration)
         eventCounts:
           type: array

@@ -4,6 +4,7 @@ import { usersTable, wordProgressTable, gameSessionsTable, dailyRewardsTable } f
 import { eq, and, gte, sql } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 import { awardXp } from "../lib/activity";
+import { logEvent } from "../middleware/analytics";
 
 const router = Router();
 
@@ -219,6 +220,7 @@ router.post("/challenges/:challengeId/complete", requireAuth, async (req, res) =
 
   await db.insert(dailyRewardsTable).values({ userId, claimedDate: periodKey, coinsEarned: reward.coins });
   await awardXp(userId, reward.xp, reward.coins);
+  logEvent(userId, "challenge_completed", { challengeId, coinsEarned: reward.coins, xpEarned: reward.xp });
 
   res.json({ alreadyClaimed: false, coinsEarned: reward.coins, xpEarned: reward.xp });
 });
