@@ -4,42 +4,9 @@ import { wordsTable, wordProgressTable } from "@workspace/db";
 import { ListWordsQueryParams, GetWordParams, MarkWordProgressParams, MarkWordProgressBody, ToggleFavoriteParams } from "@workspace/api-zod";
 import { eq, and, ilike, sql } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
+import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
 
 const router = Router();
-
-router.get("/words/favorites", requireAuth, async (req, res) => {
-  const userId = req.user!.id;
-  const favorites = await db
-    .select({
-      id: wordsTable.id,
-      word: wordsTable.word,
-      translation: wordsTable.translation,
-      level: wordsTable.level,
-      category: wordsTable.category,
-      partOfSpeech: wordsTable.partOfSpeech,
-      exampleSentence: wordsTable.exampleSentence,
-      exampleTranslation: wordsTable.exampleTranslation,
-      phonetic: wordsTable.phonetic,
-      learned: wordProgressTable.learned,
-      practiceCount: wordProgressTable.practiceCount,
-      score: wordProgressTable.score,
-      isFavorite: wordProgressTable.isFavorite,
-    })
-    .from(wordsTable)
-    .innerJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
-    .where(eq(wordProgressTable.isFavorite, true))
-    .orderBy(wordsTable.word);
-
-  res.json(
-    favorites.map((w) => ({
-      ...w,
-      learned: w.learned ?? false,
-      practiceCount: w.practiceCount ?? 0,
-      score: w.score ?? 0,
-      isFavorite: w.isFavorite ?? false,
-    }))
-  );
-});
 
 router.get("/words", requireAuth, async (req, res) => {
   const userId = req.user!.id;
@@ -48,7 +15,7 @@ router.get("/words", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid query params" });
     return;
   }
-  const { level, search } = parsed.data;
+  const { level, search, favoritesOnly } = parsed.data;
   const category = typeof req.query.category === "string" ? req.query.category : undefined;
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = Math.min(100, Math.max(10, Number(req.query.pageSize) || 50));
@@ -59,6 +26,45 @@ router.get("/words", requireAuth, async (req, res) => {
   if (category) conditions.push(eq(wordsTable.category, category));
   if (search) conditions.push(ilike(wordsTable.word, `%${search}%`));
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  if (favoritesOnly) {
+    const favorites = await db
+      .select({
+        id: wordsTable.id,
+        word: wordsTable.word,
+        translation: wordsTable.translation,
+        level: wordsTable.level,
+        category: wordsTable.category,
+        partOfSpeech: wordsTable.partOfSpeech,
+        exampleSentence: wordsTable.exampleSentence,
+        exampleTranslation: wordsTable.exampleTranslation,
+        phonetic: wordsTable.phonetic,
+        learned: wordProgressTable.learned,
+        practiceCount: wordProgressTable.practiceCount,
+        score: wordProgressTable.score,
+        isFavorite: wordProgressTable.isFavorite,
+      })
+      .from(wordsTable)
+      .innerJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
+      .where(and(whereClause, eq(wordProgressTable.isFavorite, true)))
+      .orderBy(wordsTable.word)
+      .limit(pageSize)
+      .offset(offset);
+
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wordsTable)
+      .innerJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
+      .where(and(whereClause, eq(wordProgressTable.isFavorite, true)));
+
+    res.json({
+      items: favorites.map((w) => ({ ...w, learned: w.learned ?? false, practiceCount: w.practiceCount ?? 0, score: w.score ?? 0, isFavorite: w.isFavorite ?? false })),
+      total: totalResult.count,
+      page,
+      pageSize,
+    });
+    return;
+  }
 
   const [totalResult] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -102,7 +108,7 @@ router.get("/words", requireAuth, async (req, res) => {
   });
 });
 
-router.get("/words/:id", requireAuth, async (req, res) => {
+router.get("/words/:wordId", requireAuth, async (req, res) => {
   const userId = req.user!.id;
   const parsed = GetWordParams.safeParse(req.params);
   if (!parsed.success) {
@@ -143,7 +149,7 @@ router.get("/words/:id", requireAuth, async (req, res) => {
   });
 });
 
-router.post("/words/:id/progress", requireAuth, async (req, res) => {
+router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
   const userId = req.user!.id;
   const paramsParsed = MarkWordProgressParams.safeParse(req.params);
   const bodyParsed = MarkWordProgressBody.safeParse(req.body);
@@ -161,10 +167,14 @@ router.post("/words/:id/progress", requireAuth, async (req, res) => {
     .from(wordProgressTable)
     .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)));
 
+  let result;
+  let wasNewlyLearned = false;
+
   if (existing) {
     const newScore = correct ? Math.min(100, existing.score + 10) : Math.max(0, existing.score - 5);
     const newCount = existing.practiceCount + 1;
     const learned = newScore >= 70;
+    wasNewlyLearned = learned && !existing.learned;
 
     const [updated] = await db
       .update(wordProgressTable)
@@ -172,13 +182,13 @@ router.post("/words/:id/progress", requireAuth, async (req, res) => {
       .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)))
       .returning();
 
-    res.json({
+    result = {
       wordId: updated.wordId,
       learned: updated.learned,
       practiceCount: updated.practiceCount,
       score: updated.score,
       isFavorite: updated.isFavorite,
-    });
+    };
   } else {
     const score = correct ? 10 : 0;
     const [created] = await db
@@ -186,17 +196,26 @@ router.post("/words/:id/progress", requireAuth, async (req, res) => {
       .values({ userId, wordId, learned: false, practiceCount: 1, score, isFavorite: false })
       .returning();
 
-    res.json({
+    result = {
       wordId: created.wordId,
       learned: created.learned,
       practiceCount: created.practiceCount,
       score: created.score,
       isFavorite: created.isFavorite,
-    });
+    };
   }
+
+  await recordActivity(userId);
+  if (correct) {
+    const xpGain = wasNewlyLearned ? 20 : 5;
+    await awardXp(userId, xpGain, wasNewlyLearned ? 5 : 0);
+  }
+  await checkAndAwardAchievements(userId);
+
+  res.json(result);
 });
 
-router.post("/words/:id/favorite", requireAuth, async (req, res) => {
+router.post("/words/:wordId/favorite", requireAuth, async (req, res) => {
   const userId = req.user!.id;
   const parsed = ToggleFavoriteParams.safeParse(req.params);
   if (!parsed.success) {

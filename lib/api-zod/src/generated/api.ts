@@ -380,6 +380,7 @@ export const GetDailyChallengeResponse = zod.object({
   "target": zod.number(),
   "progress": zod.number(),
   "completed": zod.boolean(),
+  "rewardClaimed": zod.boolean(),
   "reward": zod.object({
   "coins": zod.number(),
   "xp": zod.number()
@@ -399,6 +400,7 @@ export const GetWeeklyChallengeResponse = zod.object({
   "target": zod.number(),
   "progress": zod.number(),
   "completed": zod.boolean(),
+  "rewardClaimed": zod.boolean(),
   "reward": zod.object({
   "coins": zod.number(),
   "xp": zod.number()
@@ -418,11 +420,26 @@ export const GetMonthlyChallengeResponse = zod.object({
   "target": zod.number(),
   "progress": zod.number(),
   "completed": zod.boolean(),
+  "rewardClaimed": zod.boolean(),
   "reward": zod.object({
   "coins": zod.number(),
   "xp": zod.number()
 }),
   "expiresAt": zod.string()
+})
+
+
+/**
+ * @summary Claim the reward for a completed challenge
+ */
+export const CompleteChallengeParams = zod.object({
+  "challengeId": zod.enum(['daily', 'weekly', 'monthly'])
+})
+
+export const CompleteChallengeResponse = zod.object({
+  "alreadyClaimed": zod.boolean(),
+  "coinsEarned": zod.number(),
+  "xpEarned": zod.number()
 })
 
 

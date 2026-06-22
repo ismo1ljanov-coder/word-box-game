@@ -16,6 +16,7 @@ export interface ChallengeProgress {
   target: number;
   progress: number;
   completed: boolean;
+  rewardClaimed: boolean;
   reward: ChallengeReward;
   expiresAt: string;
 }

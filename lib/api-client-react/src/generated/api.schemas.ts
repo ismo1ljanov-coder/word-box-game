@@ -322,8 +322,15 @@ export interface ChallengeProgress {
   target: number;
   progress: number;
   completed: boolean;
+  rewardClaimed: boolean;
   reward: ChallengeReward;
   expiresAt: string;
+}
+
+export interface ChallengeCompletionResult {
+  alreadyClaimed: boolean;
+  coinsEarned: number;
+  xpEarned: number;
 }
 
 export interface LeaderboardEntry {

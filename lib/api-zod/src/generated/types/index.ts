@@ -10,6 +10,7 @@ export * from './achievement';
 export * from './achievementFull';
 export * from './authUser';
 export * from './authUserSubscriptionTier';
+export * from './challengeCompletionResult';
 export * from './challengeProgress';
 export * from './challengeProgressType';
 export * from './challengeReward';

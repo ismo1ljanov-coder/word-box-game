@@ -505,6 +505,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/ChallengeProgress"
 
+  /challenges/{challengeId}/complete:
+    post:
+      operationId: completeChallenge
+      tags: [challenges]
+      summary: Claim the reward for a completed challenge
+      parameters:
+        - name: challengeId
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+      responses:
+        "200":
+          description: Reward claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChallengeCompletionResult"
+
   /leaderboard:
     get:
       operationId: getLeaderboard
@@ -931,7 +951,7 @@ components:
 
     ChallengeProgress:
       type: object
-      required: [id, title, description, type, target, progress, completed, reward, expiresAt]
+      required: [id, title, description, type, target, progress, completed, rewardClaimed, reward, expiresAt]
       properties:
         id:
           type: string
@@ -948,10 +968,23 @@ components:
           type: integer
         completed:
           type: boolean
+        rewardClaimed:
+          type: boolean
         reward:
           $ref: "#/components/schemas/ChallengeReward"
         expiresAt:
           type: string
+
+    ChallengeCompletionResult:
+      type: object
+      required: [alreadyClaimed, coinsEarned, xpEarned]
+      properties:
+        alreadyClaimed:
+          type: boolean
+        coinsEarned:
+          type: integer
+        xpEarned:
+          type: integer
 
     LeaderboardEntry:
       type: object

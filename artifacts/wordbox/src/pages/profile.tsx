@@ -8,8 +8,10 @@ import {
   useGetMonthlyChallenge,
   useUpdateProfile,
   useChangePassword,
+  useCompleteChallenge,
+  useGetGameSessions,
 } from "@workspace/api-client-react";
-import type { UpdateProfileInputDailyGoalTarget } from "@workspace/api-client-react";
+import type { UpdateProfileInputDailyGoalTarget, ChallengeProgress } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,10 +19,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trophy, Flame, BookOpen, Star, Zap, Target, Crown, LogOut, Settings, Lock } from "lucide-react";
+import { Trophy, Flame, BookOpen, Star, Zap, Target, Crown, LogOut, Settings, Lock, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/hooks/useTheme";
 
 const BADGE_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string }> = {
   master: { label: "Master", emoji: "🏅", color: "text-amber-700", bg: "bg-amber-100 dark:bg-amber-900/30" },
@@ -30,6 +33,8 @@ const BADGE_CONFIG: Record<string, { label: string; emoji: string; color: string
   bronze: { label: "Bronze", emoji: "🥉", color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/30" },
 };
 
+const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
 function getBadge(xp: number) {
   if (xp >= 10000) return "master";
   if (xp >= 5000) return "diamond";
@@ -38,12 +43,80 @@ function getBadge(xp: number) {
   return "bronze";
 }
 
+function getCurrentLevel(levelStats: { level: string; percentage: number }[]) {
+  for (const l of CEFR_LEVELS) {
+    const stat = levelStats.find((s) => s.level === l);
+    if (stat && stat.percentage < 100) return l;
+  }
+  return "C2";
+}
+
 const GOAL_OPTIONS = [10, 20, 30, 50];
+
+function ChallengeRow({ ch }: { ch: ChallengeProgress }) {
+  const { mutateAsync: claim, isPending } = useCompleteChallenge();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const pct = Math.round((ch.progress / ch.target) * 100);
+
+  const handleClaim = async () => {
+    try {
+      const result = await claim({ challengeId: ch.id as "daily" | "weekly" | "monthly" });
+      if (result.alreadyClaimed) {
+        toast({ title: "Avval olingan" });
+      } else {
+        toast({ title: `+${result.coinsEarned} 🪙  +${result.xpEarned} XP`, description: "Mukofot olindi!" });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats/summary"] });
+        queryClient.invalidateQueries({ queryKey: [`/api/challenges/${ch.id}`] });
+      }
+    } catch {
+      toast({ title: "Xatolik", variant: "destructive" });
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-1.5 gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="font-bold text-sm truncate">{ch.title}</span>
+          {ch.completed && !ch.rewardClaimed && (
+            <Badge className="bg-emerald-500 text-white border-0 text-xs shrink-0">✓ Tayyor!</Badge>
+          )}
+          {ch.rewardClaimed && (
+            <Badge variant="outline" className="text-xs shrink-0">✓ Olindi</Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-sm font-bold text-muted-foreground">
+            {ch.progress}/{ch.target}
+          </span>
+          {ch.completed && !ch.rewardClaimed && (
+            <Button
+              size="sm"
+              className="rounded-xl h-7 px-3 text-xs bg-emerald-500 hover:bg-emerald-600 text-white border-0"
+              onClick={handleClaim}
+              disabled={isPending}
+            >
+              {isPending ? "..." : "Ol"}
+            </Button>
+          )}
+        </div>
+      </div>
+      <Progress value={pct} className="h-2 rounded-full" />
+      <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+        <span>🪙 +{ch.reward.coins}</span>
+        <span>⚡ +{ch.reward.xp} XP</span>
+      </div>
+    </div>
+  );
+}
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [theme, toggleTheme] = useTheme();
 
   const { data: stats, isLoading } = useGetStatsSummary();
   const { data: levelStats } = useGetLevelStats();
@@ -51,6 +124,7 @@ export default function Profile() {
   const { data: dailyChallenge } = useGetDailyChallenge();
   const { data: weeklyChallenge } = useGetWeeklyChallenge();
   const { data: monthlyChallenge } = useGetMonthlyChallenge();
+  const { data: sessions } = useGetGameSessions();
 
   const { mutateAsync: updateProfile, isPending: isUpdatingProfile } = useUpdateProfile();
   const { mutateAsync: changePassword, isPending: isChangingPassword } = useChangePassword();
@@ -70,8 +144,30 @@ export default function Profile() {
 
   const badgeKey = getBadge(stats?.totalXp ?? 0);
   const badge = BADGE_CONFIG[badgeKey]!;
+  const currentLevel = levelStats ? getCurrentLevel(levelStats) : null;
 
-  const totalLevel = levelStats?.find((l) => l.percentage < 100)?.level ?? "C2";
+  const totalLearned = levelStats?.reduce((s, l) => s + l.learnedWords, 0) ?? 0;
+  const totalWords = levelStats?.reduce((s, l) => s + l.totalWords, 0) ?? 0;
+  const remaining = totalWords - totalLearned;
+
+  const weekActivity = (() => {
+    const days: boolean[] = Array(7).fill(false);
+    if (!sessions) return days;
+    const now = Date.now();
+    for (const s of sessions) {
+      const diffMs = now - new Date(s.createdAt).getTime();
+      const diffDays = Math.floor(diffMs / 86400000);
+      if (diffDays >= 0 && diffDays < 7) days[6 - diffDays] = true;
+    }
+    return days;
+  })();
+
+  const DAY_LABELS = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
+  const todayDow = new Date().getDay();
+  const orderedDays = Array.from({ length: 7 }, (_, i) => {
+    const dow = (todayDow - 6 + i + 7) % 7;
+    return { label: DAY_LABELS[dow === 0 ? 6 : dow - 1] ?? DAY_LABELS[i], active: weekActivity[i] };
+  });
 
   const handleSaveName = async () => {
     if (!editName.trim()) return;
@@ -123,9 +219,11 @@ export default function Profile() {
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-3xl font-black text-primary-foreground shadow-lg">
                 {initials}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-card border-2 border-background flex items-center justify-center text-xs font-black">
-                {totalLevel}
-              </div>
+              {currentLevel && (
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-card border-2 border-background flex items-center justify-center text-xs font-black">
+                  {currentLevel}
+                </div>
+              )}
             </div>
             <div className="text-center md:text-left flex-1">
               <h2 className="text-2xl font-black">{user?.fullName ?? "O'quvchi"}</h2>
@@ -158,10 +256,10 @@ export default function Profile() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { icon: BookOpen, label: "O'rganildi", value: stats?.learnedWords ?? 0, suffix: "so'z", color: "text-blue-500", bg: "bg-blue-500/10" },
+          { icon: BookOpen, label: "O'rganildi", value: totalLearned, suffix: `/${totalWords}`, color: "text-blue-500", bg: "bg-blue-500/10" },
           { icon: Flame, label: "Eng uzun seriya", value: stats?.longestStreak ?? 0, suffix: "kun", color: "text-orange-500", bg: "bg-orange-500/10" },
           { icon: Star, label: "Tangalar", value: stats?.totalCoins ?? 0, suffix: "🪙", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-          { icon: Zap, label: "Sessiyalar", value: stats?.totalSessions ?? 0, suffix: "ta", color: "text-violet-500", bg: "bg-violet-500/10" },
+          { icon: Zap, label: "Qolgan so'zlar", value: remaining, suffix: "ta", color: "text-violet-500", bg: "bg-violet-500/10" },
         ].map((item) => (
           <Card key={item.label} className="rounded-2xl border-none shadow-sm">
             <CardContent className="p-5">
@@ -182,6 +280,30 @@ export default function Profile() {
         ))}
       </div>
 
+      {/* Weekly activity strip */}
+      <Card className="rounded-2xl border-border/50">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-2 font-bold mb-4">
+            <Flame className="w-5 h-5 text-orange-500" />
+            Bu hafta faollik
+          </div>
+          <div className="flex gap-2 justify-between">
+            {orderedDays.map((d, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
+                <div
+                  className={`w-full aspect-square rounded-xl max-w-10 ${
+                    d.active
+                      ? "bg-primary shadow-sm shadow-primary/30"
+                      : "bg-muted"
+                  }`}
+                />
+                <span className="text-xs text-muted-foreground font-medium">{d.label}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Challenges */}
       {(dailyChallenge || weeklyChallenge || monthlyChallenge) && (
         <Card className="rounded-2xl border-border/50">
@@ -193,26 +315,7 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-4">
             {[dailyChallenge, weeklyChallenge, monthlyChallenge].filter(Boolean).map((ch) =>
-              ch ? (
-                <div key={ch.id}>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <div>
-                      <span className="font-bold text-sm">{ch.title}</span>
-                      {ch.completed && (
-                        <Badge className="ml-2 bg-emerald-500 text-white border-0 text-xs">✓ Bajarildi</Badge>
-                      )}
-                    </div>
-                    <span className="text-sm font-bold text-muted-foreground">
-                      {ch.progress}/{ch.target}
-                    </span>
-                  </div>
-                  <Progress value={Math.round((ch.progress / ch.target) * 100)} className="h-2 rounded-full" />
-                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                    <span>🪙 +{ch.reward.coins}</span>
-                    <span>⚡ +{ch.reward.xp} XP</span>
-                  </div>
-                </div>
-              ) : null
+              ch ? <ChallengeRow key={ch.id} ch={ch} /> : null
             )}
           </CardContent>
         </Card>
@@ -233,7 +336,9 @@ export default function Profile() {
                 <div className="flex justify-between items-center mb-1.5">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="font-bold w-10 justify-center">{level.level}</Badge>
-                    <span className="text-sm text-muted-foreground">{level.learnedWords} / {level.totalWords}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {level.learnedWords} o'rganildi · {level.totalWords - level.learnedWords} qoldi
+                    </span>
                   </div>
                   <span className="font-bold text-sm">{level.percentage}%</span>
                 </div>
@@ -347,6 +452,32 @@ export default function Profile() {
                 </Button>
               ))}
             </div>
+          </div>
+
+          {/* Dark mode toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="font-bold flex items-center gap-2">
+              {theme === "dark" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              Ko'rinish
+            </Label>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl font-bold gap-2"
+              onClick={toggleTheme}
+            >
+              {theme === "dark" ? (
+                <>
+                  <Sun className="w-4 h-4" />
+                  Kunduzgi
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4" />
+                  Tungi
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Change password */}

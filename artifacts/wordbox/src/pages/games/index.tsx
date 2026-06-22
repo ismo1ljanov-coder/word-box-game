@@ -1,8 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Brain, Grid3X3, Layers, Layers3, SpellCheck2, Play, Swords, Shuffle, Zap } from "lucide-react";
+import { Brain, Grid3X3, Layers, Layers3, SpellCheck2, Play, Swords, Shuffle, Zap, Target, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { useGetDailyChallenge, useGetWeeklyChallenge, useGetMonthlyChallenge, useCompleteChallenge } from "@workspace/api-client-react";
+import type { ChallengeProgress } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 const GAMES = [
   {
@@ -84,7 +89,69 @@ const GAMES = [
   },
 ];
 
+function ChallengeCard({ challenge, type }: { challenge: ChallengeProgress; type: "daily" | "weekly" | "monthly" }) {
+  const { mutateAsync: claimReward, isPending } = useCompleteChallenge();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  if (!challenge) return null;
+
+  const pct = Math.round((challenge.progress / challenge.target) * 100);
+
+  const handleClaim = async () => {
+    try {
+      const result = await claimReward({ challengeId: type });
+      if (result.alreadyClaimed) {
+        toast({ title: "Avval olingan", description: "Bu mukofot allaqachon olindi" });
+      } else {
+        toast({ title: `+${result.coinsEarned} 🪙  +${result.xpEarned} XP`, description: "Mukofot olindi!" });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats/summary"] });
+        queryClient.invalidateQueries({ queryKey: [`/api/challenges/${type}`] });
+      }
+    } catch {
+      toast({ title: "Xatolik", variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="p-4 rounded-2xl bg-muted/40 border border-border/50">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-sm">{challenge.title}</span>
+            {challenge.completed && !challenge.rewardClaimed && (
+              <Badge className="bg-emerald-500 text-white border-0 text-xs shrink-0">✓ Tayyor!</Badge>
+            )}
+            {challenge.rewardClaimed && (
+              <Badge variant="outline" className="text-xs shrink-0">✓ Olindi</Badge>
+            )}
+          </div>
+          <Progress value={pct} className="h-1.5 rounded-full mb-1" />
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{challenge.progress} / {challenge.target}</span>
+            <span>🪙 +{challenge.reward.coins} · ⚡ +{challenge.reward.xp}</span>
+          </div>
+        </div>
+        {challenge.completed && !challenge.rewardClaimed && (
+          <Button
+            size="sm"
+            className="rounded-xl shrink-0 bg-emerald-500 hover:bg-emerald-600 text-white border-0 text-xs"
+            onClick={handleClaim}
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Ol"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function GamesHub() {
+  const { data: daily } = useGetDailyChallenge();
+  const { data: weekly } = useGetWeeklyChallenge();
+  const { data: monthly } = useGetMonthlyChallenge();
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header>
@@ -115,6 +182,20 @@ export default function GamesHub() {
           </CardContent>
         </Card>
       </Link>
+
+      {(daily || weekly || monthly) && (
+        <Card className="rounded-2xl border-border/50">
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-center gap-2 font-bold text-lg mb-4">
+              <Target className="w-5 h-5 text-secondary" />
+              Maqsadlar
+            </div>
+            {daily && <ChallengeCard challenge={daily} type="daily" />}
+            {weekly && <ChallengeCard challenge={weekly} type="weekly" />}
+            {monthly && <ChallengeCard challenge={monthly} type="monthly" />}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {GAMES.map((game) => (

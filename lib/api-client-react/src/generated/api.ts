@@ -23,6 +23,7 @@ import type {
   Achievement,
   AchievementFull,
   AuthUser,
+  ChallengeCompletionResult,
   ChallengeProgress,
   ChangePassword200,
   ChangePasswordInput,
@@ -2029,6 +2030,76 @@ export function useGetMonthlyChallenge<TData = Awaited<ReturnType<typeof getMont
 
 
 
+
+export const getCompleteChallengeUrl = (challengeId: 'daily' | 'weekly' | 'monthly',) => {
+
+
+
+
+  return `/api/challenges/${challengeId}/complete`
+}
+
+/**
+ * @summary Claim the reward for a completed challenge
+ */
+export const completeChallenge = async (challengeId: 'daily' | 'weekly' | 'monthly', options?: RequestInit): Promise<ChallengeCompletionResult> => {
+
+  return customFetch<ChallengeCompletionResult>(getCompleteChallengeUrl(challengeId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCompleteChallengeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeChallenge>>, TError,{challengeId: 'daily' | 'weekly' | 'monthly'}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeChallenge>>, TError,{challengeId: 'daily' | 'weekly' | 'monthly'}, TContext> => {
+
+const mutationKey = ['completeChallenge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeChallenge>>, {challengeId: 'daily' | 'weekly' | 'monthly'}> = (props) => {
+          const {challengeId} = props ?? {};
+
+          return  completeChallenge(challengeId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteChallengeMutationResult = NonNullable<Awaited<ReturnType<typeof completeChallenge>>>
+
+    export type CompleteChallengeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Claim the reward for a completed challenge
+ */
+export const useCompleteChallenge = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeChallenge>>, TError,{challengeId: 'daily' | 'weekly' | 'monthly'}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeChallenge>>,
+        TError,
+        {challengeId: 'daily' | 'weekly' | 'monthly'},
+        TContext
+      > => {
+      return useMutation(getCompleteChallengeMutationOptions(options));
+    }
 
 export const getGetLeaderboardUrl = () => {
 
