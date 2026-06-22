@@ -33,8 +33,6 @@ const BADGE_CONFIG: Record<string, { label: string; emoji: string; color: string
   bronze: { label: "Bronze", emoji: "🥉", color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/30" },
 };
 
-const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
-
 function getBadge(xp: number) {
   if (xp >= 10000) return "master";
   if (xp >= 5000) return "diamond";
@@ -43,12 +41,14 @@ function getBadge(xp: number) {
   return "bronze";
 }
 
-function getCurrentLevel(levelStats: { level: string; percentage: number }[]) {
-  for (const l of CEFR_LEVELS) {
-    const stat = levelStats.find((s) => s.level === l);
-    if (stat && stat.percentage < 100) return l;
-  }
-  return "C2";
+// CEFR level is derived from total XP thresholds
+function getCefrLevelFromXp(xp: number): string {
+  if (xp >= 20000) return "C2";
+  if (xp >= 10000) return "C1";
+  if (xp >= 5000) return "B2";
+  if (xp >= 2500) return "B1";
+  if (xp >= 1000) return "A2";
+  return "A1";
 }
 
 const GOAL_OPTIONS = [10, 20, 30, 50];
@@ -144,7 +144,7 @@ export default function Profile() {
 
   const badgeKey = getBadge(stats?.totalXp ?? 0);
   const badge = BADGE_CONFIG[badgeKey]!;
-  const currentLevel = levelStats ? getCurrentLevel(levelStats) : null;
+  const currentLevel = getCefrLevelFromXp(stats?.totalXp ?? 0);
 
   const totalLearned = levelStats?.reduce((s, l) => s + l.learnedWords, 0) ?? 0;
   const totalWords = levelStats?.reduce((s, l) => s + l.totalWords, 0) ?? 0;
@@ -276,9 +276,9 @@ export default function Profile() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { icon: BookOpen, label: "O'rganildi", value: totalLearned, suffix: `/${totalWords}`, color: "text-blue-500", bg: "bg-blue-500/10" },
+          { icon: BookOpen, label: "O'zlashtirilgan", value: totalLearned, suffix: "so'z", color: "text-blue-500", bg: "bg-blue-500/10" },
+          { icon: Star, label: "Sevimlilar", value: stats?.favoriteWords ?? 0, suffix: "ta", color: "text-pink-500", bg: "bg-pink-500/10" },
           { icon: Flame, label: "Eng uzun seriya", value: stats?.longestStreak ?? 0, suffix: "kun", color: "text-orange-500", bg: "bg-orange-500/10" },
-          { icon: Star, label: "Tangalar", value: stats?.totalCoins ?? 0, suffix: "🪙", color: "text-yellow-500", bg: "bg-yellow-500/10" },
           { icon: Zap, label: "Qolgan so'zlar", value: remaining, suffix: "ta", color: "text-violet-500", bg: "bg-violet-500/10" },
         ].map((item) => (
           <Card key={item.label} className="rounded-2xl border-none shadow-sm">

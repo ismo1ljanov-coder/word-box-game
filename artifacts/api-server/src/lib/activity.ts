@@ -59,6 +59,10 @@ function yesterdayUTC(): string {
   return d.toISOString().split("T")[0];
 }
 
+// Daily login bonus awarded once per day when activity is first recorded
+const DAILY_LOGIN_XP = 5;
+const DAILY_LOGIN_COINS = 2;
+
 export async function recordActivity(userId: number): Promise<void> {
   const [user] = await db.select({
     streakDays: usersTable.streakDays,
@@ -72,6 +76,7 @@ export async function recordActivity(userId: number): Promise<void> {
   const yesterday = yesterdayUTC();
   const lastActivity = dateToUTCString(user.lastActivityDate);
 
+  // Already recorded today — no streak update, no daily bonus
   if (lastActivity === today) return;
 
   let newStreak: number;
@@ -87,6 +92,9 @@ export async function recordActivity(userId: number): Promise<void> {
     streakDays: newStreak,
     longestStreak: newLongest,
     lastActivityDate: new Date(),
+    // Award daily login bonus atomically with the streak update
+    totalXp: sql`${usersTable.totalXp} + ${DAILY_LOGIN_XP}`,
+    totalCoins: sql`${usersTable.totalCoins} + ${DAILY_LOGIN_COINS}`,
   }).where(eq(usersTable.id, userId));
 }
 
