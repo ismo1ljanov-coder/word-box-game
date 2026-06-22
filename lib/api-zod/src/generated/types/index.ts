@@ -3,12 +3,13 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
 export * from './crosswordClue';
 export * from './crosswordClueDirection';
 export * from './crosswordPuzzle';
+export * from './dailyChallengeResponse';
 export * from './gameSession';
 export * from './gameSessionGameType';
 export * from './gameSessionInput';
@@ -26,6 +27,9 @@ export * from './listWordsParams';
 export * from './progressInput';
 export * from './quizQuestion';
 export * from './statsSummary';
+export * from './toggleFavoriteResponse';
 export * from './word';
 export * from './wordLevel';
+export * from './wordListResponse';
 export * from './wordProgress';
+export * from './wordWithProgress';

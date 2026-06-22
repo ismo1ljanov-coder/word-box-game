@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 export interface HealthStatus {
   status: string;
@@ -29,11 +29,27 @@ export interface Word {
   level: WordLevel;
   category: string;
   /** @nullable */
+  partOfSpeech?: string | null;
+  /** @nullable */
   exampleSentence?: string | null;
   /** @nullable */
   exampleTranslation?: string | null;
   /** @nullable */
   phonetic?: string | null;
+}
+
+export type WordWithProgress = Word & {
+  learned?: boolean;
+  practiceCount?: number;
+  score?: number;
+  isFavorite?: boolean;
+};
+
+export interface WordListResponse {
+  items: WordWithProgress[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface WordProgress {
@@ -42,12 +58,18 @@ export interface WordProgress {
   practiceCount: number;
   /** 0-100 mastery score */
   score: number;
+  isFavorite: boolean;
 }
 
 export interface ProgressInput {
   correct: boolean;
   /** @nullable */
   gameType?: string | null;
+}
+
+export interface ToggleFavoriteResponse {
+  wordId: number;
+  isFavorite: boolean;
 }
 
 export type GameSessionGameType = typeof GameSessionGameType[keyof typeof GameSessionGameType];
@@ -59,6 +81,7 @@ export const GameSessionGameType = {
   flashcard: 'flashcard',
   matching: 'matching',
   spelling: 'spelling',
+  daily_challenge: 'daily_challenge',
 } as const;
 
 export type GameSessionLevel = typeof GameSessionLevel[keyof typeof GameSessionLevel];
@@ -80,6 +103,7 @@ export interface GameSession {
   score: number;
   totalQuestions: number;
   correctAnswers: number;
+  coinsEarned: number;
   createdAt: string;
 }
 
@@ -92,6 +116,7 @@ export const GameSessionInputGameType = {
   flashcard: 'flashcard',
   matching: 'matching',
   spelling: 'spelling',
+  daily_challenge: 'daily_challenge',
 } as const;
 
 export type GameSessionInputLevel = typeof GameSessionInputLevel[keyof typeof GameSessionInputLevel];
@@ -112,6 +137,24 @@ export interface GameSessionInput {
   score: number;
   totalQuestions: number;
   correctAnswers: number;
+  /** @nullable */
+  coinsEarned?: number | null;
+}
+
+export interface QuizQuestion {
+  wordId: number;
+  /** English word to translate */
+  word: string;
+  /** Correct Uzbek translation */
+  correctAnswer: string;
+  /** 4 options including correct answer */
+  options: string[];
+}
+
+export interface DailyChallengeResponse {
+  questions: QuizQuestion[];
+  completedToday: boolean;
+  bonusCoins: number;
 }
 
 export type CrosswordClueDirection = typeof CrosswordClueDirection[keyof typeof CrosswordClueDirection];
@@ -140,16 +183,6 @@ export interface CrosswordPuzzle {
   level: string;
 }
 
-export interface QuizQuestion {
-  wordId: number;
-  /** English word to translate */
-  word: string;
-  /** Correct Uzbek translation */
-  correctAnswer: string;
-  /** 4 options including correct answer */
-  options: string[];
-}
-
 export interface StatsSummary {
   totalWords: number;
   learnedWords: number;
@@ -157,6 +190,11 @@ export interface StatsSummary {
   averageScore: number;
   streakDays: number;
   totalXp: number;
+  totalCoins: number;
+  dailyGoalTarget: number;
+  dailyGoalCompleted: number;
+  weeklyXp: number;
+  favoriteWords: number;
 }
 
 export interface LevelStat {
@@ -167,6 +205,9 @@ export interface LevelStat {
 }
 
 export type ListWordsParams = {
+/**
+ * @nullable
+ */
 level?: ListWordsLevel;
 /**
  * @nullable
@@ -176,9 +217,17 @@ category?: string | null;
  * @nullable
  */
 search?: string | null;
+/**
+ * @nullable
+ */
+page?: number | null;
+/**
+ * @nullable
+ */
+pageSize?: number | null;
 };
 
-export type ListWordsLevel = typeof ListWordsLevel[keyof typeof ListWordsLevel];
+export type ListWordsLevel = typeof ListWordsLevel[keyof typeof ListWordsLevel] | null;
 
 
 export const ListWordsLevel = {

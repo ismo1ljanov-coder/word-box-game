@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { wordsTable, gameSessionsTable } from "@workspace/db";
 import { GetCrosswordPuzzleQueryParams, GetQuizWordsQueryParams, CreateGameSessionBody } from "@workspace/api-zod";
-import { eq, sql, ne } from "drizzle-orm";
+import { eq, sql, and, gte } from "drizzle-orm";
 
 const router = Router();
 
@@ -33,7 +33,11 @@ router.post("/games/sessions", async (req, res) => {
     return;
   }
 
-  const [session] = await db.insert(gameSessionsTable).values(parsed.data).returning();
+  const coinsEarned = parsed.data.correctAnswers * 2 + (parsed.data.correctAnswers === parsed.data.totalQuestions ? 10 : 0);
+  const [session] = await db
+    .insert(gameSessionsTable)
+    .values({ ...parsed.data, coinsEarned })
+    .returning();
 
   res.status(201).json({
     id: session.id,
@@ -42,7 +46,59 @@ router.post("/games/sessions", async (req, res) => {
     score: session.score,
     totalQuestions: session.totalQuestions,
     correctAnswers: session.correctAnswers,
+    coinsEarned: session.coinsEarned,
     createdAt: session.createdAt?.toISOString() ?? new Date().toISOString(),
+  });
+});
+
+router.get("/games/daily-challenge", async (_req, res) => {
+  const BONUS_COINS = 50;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const [existingSession] = await db
+    .select()
+    .from(gameSessionsTable)
+    .where(
+      and(
+        eq(gameSessionsTable.gameType, "daily_challenge"),
+        gte(gameSessionsTable.createdAt, today)
+      )
+    )
+    .limit(1);
+
+  const words = await db.select().from(wordsTable).orderBy(sql`random()`).limit(10);
+
+  if (words.length === 0) {
+    res.json({ words: [], completedToday: false, bonusCoins: BONUS_COINS });
+    return;
+  }
+
+  const allTranslations = await db.select({ translation: wordsTable.translation }).from(wordsTable);
+  const translationPool = allTranslations.map((w) => w.translation);
+
+  const questions = words.map((word) => {
+    const distractors: string[] = [];
+    const shuffled = [...translationPool].filter((t) => t !== word.translation).sort(() => Math.random() - 0.5);
+    for (const t of shuffled) {
+      if (distractors.length >= 3) break;
+      distractors.push(t);
+    }
+    const options = [word.translation, ...distractors].sort(() => Math.random() - 0.5);
+    return {
+      wordId: word.id,
+      word: word.word,
+      correctAnswer: word.translation,
+      options,
+    };
+  });
+
+  res.json({
+    questions,
+    completedToday: !!existingSession,
+    bonusCoins: BONUS_COINS,
   });
 });
 

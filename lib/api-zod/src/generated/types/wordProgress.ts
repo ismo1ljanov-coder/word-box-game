@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
 export interface WordProgress {
@@ -12,4 +12,5 @@ export interface WordProgress {
   practiceCount: number;
   /** 0-100 mastery score */
   score: number;
+  isFavorite: boolean;
 }

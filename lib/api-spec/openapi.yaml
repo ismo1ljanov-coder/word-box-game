@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Api
-  version: 0.1.0
+  version: 0.2.0
   description: Wordbox API - English vocabulary learning platform
 servers:
   - url: /api
@@ -40,8 +40,8 @@ paths:
         - name: level
           in: query
           schema:
-            type: string
-            enum: [A1, A2, B1, B2, C1, C2]
+            type: ["string", "null"]
+            enum: [A1, A2, B1, B2, C1, C2, null]
         - name: category
           in: query
           schema:
@@ -50,15 +50,36 @@ paths:
           in: query
           schema:
             type: ["string", "null"]
+        - name: page
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: pageSize
+          in: query
+          schema:
+            type: ["integer", "null"]
       responses:
         "200":
           description: List of words
           content:
             application/json:
               schema:
+                $ref: "#/components/schemas/WordListResponse"
+
+  /words/favorites:
+    get:
+      operationId: getFavoriteWords
+      tags: [words]
+      summary: Get all favorited words
+      responses:
+        "200":
+          description: List of favorite words
+          content:
+            application/json:
+              schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Word"
+                  $ref: "#/components/schemas/WordWithProgress"
 
   /words/{id}:
     get:
@@ -76,7 +97,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Word"
+                $ref: "#/components/schemas/WordWithProgress"
         "404":
           description: Not found
 
@@ -104,6 +125,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WordProgress"
+
+  /words/{id}/favorite:
+    post:
+      operationId: toggleFavorite
+      tags: [words]
+      summary: Toggle favorite status of a word
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated favorite status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToggleFavoriteResponse"
 
   /progress:
     get:
@@ -197,6 +237,19 @@ paths:
                 items:
                   $ref: "#/components/schemas/QuizQuestion"
 
+  /games/daily-challenge:
+    get:
+      operationId: getDailyChallenge
+      tags: [games]
+      summary: Get today's daily challenge words
+      responses:
+        "200":
+          description: Daily challenge data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyChallengeResponse"
+
   /stats/summary:
     get:
       operationId: getStatsSummary
@@ -250,6 +303,8 @@ components:
           enum: [A1, A2, B1, B2, C1, C2]
         category:
           type: string
+        partOfSpeech:
+          type: ["string", "null"]
         exampleSentence:
           type: ["string", "null"]
         exampleTranslation:
@@ -257,9 +312,38 @@ components:
         phonetic:
           type: ["string", "null"]
 
+    WordWithProgress:
+      allOf:
+        - $ref: "#/components/schemas/Word"
+        - type: object
+          properties:
+            learned:
+              type: boolean
+            practiceCount:
+              type: integer
+            score:
+              type: integer
+            isFavorite:
+              type: boolean
+
+    WordListResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WordWithProgress"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
     WordProgress:
       type: object
-      required: [wordId, learned, practiceCount, score]
+      required: [wordId, learned, practiceCount, score, isFavorite]
       properties:
         wordId:
           type: integer
@@ -270,6 +354,8 @@ components:
         score:
           type: integer
           description: 0-100 mastery score
+        isFavorite:
+          type: boolean
 
     ProgressInput:
       type: object
@@ -280,15 +366,24 @@ components:
         gameType:
           type: ["string", "null"]
 
+    ToggleFavoriteResponse:
+      type: object
+      required: [wordId, isFavorite]
+      properties:
+        wordId:
+          type: integer
+        isFavorite:
+          type: boolean
+
     GameSession:
       type: object
-      required: [id, gameType, level, score, totalQuestions, correctAnswers, createdAt]
+      required: [id, gameType, level, score, totalQuestions, correctAnswers, coinsEarned, createdAt]
       properties:
         id:
           type: integer
         gameType:
           type: string
-          enum: [quiz, crossword, flashcard, matching, spelling]
+          enum: [quiz, crossword, flashcard, matching, spelling, daily_challenge]
         level:
           type: string
           enum: [A1, A2, B1, B2, C1, C2]
@@ -297,6 +392,8 @@ components:
         totalQuestions:
           type: integer
         correctAnswers:
+          type: integer
+        coinsEarned:
           type: integer
         createdAt:
           type: string
@@ -307,7 +404,7 @@ components:
       properties:
         gameType:
           type: string
-          enum: [quiz, crossword, flashcard, matching, spelling]
+          enum: [quiz, crossword, flashcard, matching, spelling, daily_challenge]
         level:
           type: string
           enum: [A1, A2, B1, B2, C1, C2]
@@ -316,6 +413,21 @@ components:
         totalQuestions:
           type: integer
         correctAnswers:
+          type: integer
+        coinsEarned:
+          type: ["integer", "null"]
+
+    DailyChallengeResponse:
+      type: object
+      required: [questions, completedToday, bonusCoins]
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizQuestion"
+        completedToday:
+          type: boolean
+        bonusCoins:
           type: integer
 
     CrosswordClue:
@@ -377,7 +489,7 @@ components:
 
     StatsSummary:
       type: object
-      required: [totalWords, learnedWords, totalSessions, averageScore, streakDays, totalXp]
+      required: [totalWords, learnedWords, totalSessions, averageScore, streakDays, totalXp, totalCoins, dailyGoalTarget, dailyGoalCompleted, weeklyXp, favoriteWords]
       properties:
         totalWords:
           type: integer
@@ -390,6 +502,16 @@ components:
         streakDays:
           type: integer
         totalXp:
+          type: integer
+        totalCoins:
+          type: integer
+        dailyGoalTarget:
+          type: integer
+        dailyGoalCompleted:
+          type: integer
+        weeklyXp:
+          type: integer
+        favoriteWords:
           type: integer
 
     LevelStat:

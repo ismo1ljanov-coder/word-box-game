@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import {
   useMutation,
@@ -21,6 +21,7 @@ import type {
 
 import type {
   CrosswordPuzzle,
+  DailyChallengeResponse,
   GameSession,
   GameSessionInput,
   GetCrosswordPuzzleParams,
@@ -31,8 +32,10 @@ import type {
   ProgressInput,
   QuizQuestion,
   StatsSummary,
-  Word,
-  WordProgress
+  ToggleFavoriteResponse,
+  WordListResponse,
+  WordProgress,
+  WordWithProgress
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -142,9 +145,9 @@ export const getListWordsUrl = (params?: ListWordsParams,) => {
 /**
  * @summary List vocabulary words, optionally filtered by level
  */
-export const listWords = async (params?: ListWordsParams, options?: RequestInit): Promise<Word[]> => {
+export const listWords = async (params?: ListWordsParams, options?: RequestInit): Promise<WordListResponse> => {
 
-  return customFetch<Word[]>(getListWordsUrl(params),
+  return customFetch<WordListResponse>(getListWordsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -208,6 +211,83 @@ export function useListWords<TData = Awaited<ReturnType<typeof listWords>>, TErr
 
 
 
+export const getGetFavoriteWordsUrl = () => {
+
+
+
+
+  return `/api/words/favorites`
+}
+
+/**
+ * @summary Get all favorited words
+ */
+export const getFavoriteWords = async ( options?: RequestInit): Promise<WordWithProgress[]> => {
+
+  return customFetch<WordWithProgress[]>(getGetFavoriteWordsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFavoriteWordsQueryKey = () => {
+    return [
+    `/api/words/favorites`
+    ] as const;
+    }
+
+
+export const getGetFavoriteWordsQueryOptions = <TData = Awaited<ReturnType<typeof getFavoriteWords>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFavoriteWords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFavoriteWordsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFavoriteWords>>> = ({ signal }) => getFavoriteWords({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFavoriteWords>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFavoriteWordsQueryResult = NonNullable<Awaited<ReturnType<typeof getFavoriteWords>>>
+export type GetFavoriteWordsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all favorited words
+ */
+
+export function useGetFavoriteWords<TData = Awaited<ReturnType<typeof getFavoriteWords>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFavoriteWords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFavoriteWordsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getGetWordUrl = (id: number,) => {
 
 
@@ -216,9 +296,9 @@ export const getGetWordUrl = (id: number,) => {
   return `/api/words/${id}`
 }
 
-export const getWord = async (id: number, options?: RequestInit): Promise<Word> => {
+export const getWord = async (id: number, options?: RequestInit): Promise<WordWithProgress> => {
 
-  return customFetch<Word>(getGetWordUrl(id),
+  return customFetch<WordWithProgress>(getGetWordUrl(id),
   {
     ...options,
     method: 'GET'
@@ -349,6 +429,76 @@ export const useMarkWordProgress = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getMarkWordProgressMutationOptions(options));
+    }
+
+export const getToggleFavoriteUrl = (id: number,) => {
+
+
+
+
+  return `/api/words/${id}/favorite`
+}
+
+/**
+ * @summary Toggle favorite status of a word
+ */
+export const toggleFavorite = async (id: number, options?: RequestInit): Promise<ToggleFavoriteResponse> => {
+
+  return customFetch<ToggleFavoriteResponse>(getToggleFavoriteUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getToggleFavoriteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFavorite>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleFavorite>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['toggleFavorite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleFavorite>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  toggleFavorite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof toggleFavorite>>>
+
+    export type ToggleFavoriteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Toggle favorite status of a word
+ */
+export const useToggleFavorite = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleFavorite>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleFavorite>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getToggleFavoriteMutationOptions(options));
     }
 
 export const getListProgressUrl = () => {
@@ -732,6 +882,83 @@ export function useGetQuizWords<TData = Awaited<ReturnType<typeof getQuizWords>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetQuizWordsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetDailyChallengeUrl = () => {
+
+
+
+
+  return `/api/games/daily-challenge`
+}
+
+/**
+ * @summary Get today's daily challenge words
+ */
+export const getDailyChallenge = async ( options?: RequestInit): Promise<DailyChallengeResponse> => {
+
+  return customFetch<DailyChallengeResponse>(getGetDailyChallengeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDailyChallengeQueryKey = () => {
+    return [
+    `/api/games/daily-challenge`
+    ] as const;
+    }
+
+
+export const getGetDailyChallengeQueryOptions = <TData = Awaited<ReturnType<typeof getDailyChallenge>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDailyChallengeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDailyChallenge>>> = ({ signal }) => getDailyChallenge({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDailyChallenge>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDailyChallengeQueryResult = NonNullable<Awaited<ReturnType<typeof getDailyChallenge>>>
+export type GetDailyChallengeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get today's daily challenge words
+ */
+
+export function useGetDailyChallenge<TData = Awaited<ReturnType<typeof getDailyChallenge>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDailyChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDailyChallengeQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

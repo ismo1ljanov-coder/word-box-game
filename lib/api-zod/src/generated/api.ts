@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import * as zod from 'zod';
 
@@ -20,22 +20,56 @@ export const HealthCheckResponse = zod.object({
  * @summary List vocabulary words, optionally filtered by level
  */
 export const ListWordsQueryParams = zod.object({
-  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).optional(),
+  "level": zod.union([zod.literal('A1'),zod.literal('A2'),zod.literal('B1'),zod.literal('B2'),zod.literal('C1'),zod.literal('C2'),zod.literal(null)]).nullish(),
   "category": zod.coerce.string().nullish(),
-  "search": zod.coerce.string().nullish()
+  "search": zod.coerce.string().nullish(),
+  "page": zod.coerce.number().nullish(),
+  "pageSize": zod.coerce.number().nullish()
 })
 
-export const ListWordsResponseItem = zod.object({
+export const ListWordsResponse = zod.object({
+  "items": zod.array(zod.object({
   "id": zod.number(),
   "word": zod.string(),
   "translation": zod.string().describe('Uzbek translation'),
   "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   "category": zod.string(),
+  "partOfSpeech": zod.string().nullish(),
   "exampleSentence": zod.string().nullish(),
   "exampleTranslation": zod.string().nullish(),
   "phonetic": zod.string().nullish()
+}).and(zod.object({
+  "learned": zod.boolean().optional(),
+  "practiceCount": zod.number().optional(),
+  "score": zod.number().optional(),
+  "isFavorite": zod.boolean().optional()
+}))),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
 })
-export const ListWordsResponse = zod.array(ListWordsResponseItem)
+
+
+/**
+ * @summary Get all favorited words
+ */
+export const GetFavoriteWordsResponseItem = zod.object({
+  "id": zod.number(),
+  "word": zod.string(),
+  "translation": zod.string().describe('Uzbek translation'),
+  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
+  "category": zod.string(),
+  "partOfSpeech": zod.string().nullish(),
+  "exampleSentence": zod.string().nullish(),
+  "exampleTranslation": zod.string().nullish(),
+  "phonetic": zod.string().nullish()
+}).and(zod.object({
+  "learned": zod.boolean().optional(),
+  "practiceCount": zod.number().optional(),
+  "score": zod.number().optional(),
+  "isFavorite": zod.boolean().optional()
+}))
+export const GetFavoriteWordsResponse = zod.array(GetFavoriteWordsResponseItem)
 
 
 export const GetWordParams = zod.object({
@@ -48,10 +82,16 @@ export const GetWordResponse = zod.object({
   "translation": zod.string().describe('Uzbek translation'),
   "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   "category": zod.string(),
+  "partOfSpeech": zod.string().nullish(),
   "exampleSentence": zod.string().nullish(),
   "exampleTranslation": zod.string().nullish(),
   "phonetic": zod.string().nullish()
-})
+}).and(zod.object({
+  "learned": zod.boolean().optional(),
+  "practiceCount": zod.number().optional(),
+  "score": zod.number().optional(),
+  "isFavorite": zod.boolean().optional()
+}))
 
 
 /**
@@ -70,7 +110,21 @@ export const MarkWordProgressResponse = zod.object({
   "wordId": zod.number(),
   "learned": zod.boolean(),
   "practiceCount": zod.number(),
-  "score": zod.number().describe('0-100 mastery score')
+  "score": zod.number().describe('0-100 mastery score'),
+  "isFavorite": zod.boolean()
+})
+
+
+/**
+ * @summary Toggle favorite status of a word
+ */
+export const ToggleFavoriteParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ToggleFavoriteResponse = zod.object({
+  "wordId": zod.number(),
+  "isFavorite": zod.boolean()
 })
 
 
@@ -81,7 +135,8 @@ export const ListProgressResponseItem = zod.object({
   "wordId": zod.number(),
   "learned": zod.boolean(),
   "practiceCount": zod.number(),
-  "score": zod.number().describe('0-100 mastery score')
+  "score": zod.number().describe('0-100 mastery score'),
+  "isFavorite": zod.boolean()
 })
 export const ListProgressResponse = zod.array(ListProgressResponseItem)
 
@@ -91,11 +146,12 @@ export const ListProgressResponse = zod.array(ListProgressResponseItem)
  */
 export const ListGameSessionsResponseItem = zod.object({
   "id": zod.number(),
-  "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling']),
+  "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling', 'daily_challenge']),
   "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   "score": zod.number(),
   "totalQuestions": zod.number(),
   "correctAnswers": zod.number(),
+  "coinsEarned": zod.number(),
   "createdAt": zod.string()
 })
 export const ListGameSessionsResponse = zod.array(ListGameSessionsResponseItem)
@@ -105,11 +161,12 @@ export const ListGameSessionsResponse = zod.array(ListGameSessionsResponseItem)
  * @summary Save a completed game session score
  */
 export const CreateGameSessionBody = zod.object({
-  "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling']),
+  "gameType": zod.enum(['quiz', 'crossword', 'flashcard', 'matching', 'spelling', 'daily_challenge']),
   "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   "score": zod.number(),
   "totalQuestions": zod.number(),
-  "correctAnswers": zod.number()
+  "correctAnswers": zod.number(),
+  "coinsEarned": zod.number().nullish()
 })
 
 
@@ -155,6 +212,21 @@ export const GetQuizWordsResponse = zod.array(GetQuizWordsResponseItem)
 
 
 /**
+ * @summary Get today's daily challenge words
+ */
+export const GetDailyChallengeResponse = zod.object({
+  "questions": zod.array(zod.object({
+  "wordId": zod.number(),
+  "word": zod.string().describe('English word to translate'),
+  "correctAnswer": zod.string().describe('Correct Uzbek translation'),
+  "options": zod.array(zod.string()).describe('4 options including correct answer')
+})),
+  "completedToday": zod.boolean(),
+  "bonusCoins": zod.number()
+})
+
+
+/**
  * @summary Get learning summary stats
  */
 export const GetStatsSummaryResponse = zod.object({
@@ -163,7 +235,12 @@ export const GetStatsSummaryResponse = zod.object({
   "totalSessions": zod.number(),
   "averageScore": zod.number(),
   "streakDays": zod.number(),
-  "totalXp": zod.number()
+  "totalXp": zod.number(),
+  "totalCoins": zod.number(),
+  "dailyGoalTarget": zod.number(),
+  "dailyGoalCompleted": zod.number(),
+  "weeklyXp": zod.number(),
+  "favoriteWords": zod.number()
 })
 
 

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
 export type GameSessionInputGameType = typeof GameSessionInputGameType[keyof typeof GameSessionInputGameType];
@@ -15,4 +15,5 @@ export const GameSessionInputGameType = {
   flashcard: 'flashcard',
   matching: 'matching',
   spelling: 'spelling',
+  daily_challenge: 'daily_challenge',
 } as const;

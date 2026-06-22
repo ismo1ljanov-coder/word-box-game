@@ -1,0 +1,396 @@
+ismo1ljanov:
+You are a Senior Product Manager, Senior UI/UX Designer, and Senior Software Architect.
+
+Analyze the existing project completely before making any changes.
+
+Do NOT rebuild the project from scratch.
+Do NOT remove existing features.
+Improve and extend the current project while keeping the code clean, scalable, and maintainable.
+
+Goal:
+Create the best English vocabulary learning platform for the Central Asian market that can compete with Duolingo, Quizlet, Vocabulary.com and ELSA.
+
+The application must feel premium, addictive, modern, and extremely easy to use.
+
+========================
+CORE FEATURES
+========================
+
+Implement a complete CEFR system.
+
+Levels:
+A1
+A2
+B1
+B2
+C1
+C2
+
+Each level contains its own vocabulary.
+
+Every word must include:
+- English word
+- Part of speech
+- CEFR level
+- Definition
+- Uzbek translation
+- Russian translation (optional)
+- Example sentence
+- Pronunciation
+- IPA
+- Synonyms
+- Antonyms
+- Learning status
+
+========================
+LEARNING MODES
+========================
+
+Create multiple learning modes.
+
+• Flashcards
+
+• Multiple Choice
+
+• Type the Word
+
+• Match Word and Meaning
+
+• Listening Practice
+
+• Daily Challenge
+
+• Smart Review
+
+• Difficult Words
+
+• Favorite Words
+
+========================
+SPELLING GAME
+========================
+
+Create a beautiful spelling game.
+
+Features:
+
+Lives
+
+XP
+
+Combo
+
+Animations
+
+Correct answer
+
+Wrong answer explanation
+
+Sound effects
+
+Progress
+
+Timer
+
+Difficulty increases automatically.
+
+========================
+USER ACCOUNT
+========================
+
+Authentication:
+
+Sign Up
+
+Login
+
+Forgot Password
+
+Email Verification
+
+Logout
+
+========================
+PROFILE
+========================
+
+Beautiful Dashboard
+
+Avatar
+
+Current Level
+
+Current CEFR
+
+XP
+
+Coins
+
+Badges
+
+Achievements
+
+Current Streak
+
+Longest Streak
+
+Words Learned
+
+Words Remaining
+
+Mastered Words
+
+Favorite Words
+
+Weak Words
+
+Learning Calendar
+
+Daily Goal
+
+Weekly Goal
+
+Monthly Goal
+
+========================
+SMART PROGRESS
+========================
+
+Automatically calculate:
+
+Completion %
+
+Learning %
+
+Mastery %
+
+Weak words
+
+Daily activity
+
+Weekly activity
+
+Monthly activity
+
+Charts
+
+Graphs
+
+========================
+SEARCH
+========================
+
+Fast search
+
+Instant suggestions
+
+Search history
+
+Recently viewed
+
+Filter by:
+
+Level
+
+Status
+
+Favorites
+
+========================
+GAMIFICATION
+========================
+
+XP
+
+Coins
+
+Daily Reward
+
+Weekly Reward
+
+Achievements
+
+Bronze
+
+Silver
+
+Gold
+
+Diamond
+
+Master
+
+Leaderboards
+
+Daily Missions
+
+Weekly Missions
+
+Monthly Missions
+
+========================
+BUSINESS MODEL
+========================
+
+Target Market:
+Central Asia
+
+Create subscription system.
+
+FREE
+
+Unlimited registration
+
+Unlimited search
+
+A1
+
+A2
+
+Daily limit:
+20 new words
+
+Flashcards
+
+Basic games
+
+Progress
+
+Ads only between sessions.
+
+Never interrupt learning with ads.
+
+Maximum:
+3 ads per day.
+
+PREMIUM
+49,000 UZS/month
+
+Everything in FREE
+
+No Ads
+
+Unlimited Learning
+
+B1
+
+B2
+
+Unlimited Reviews
+
+Statistics
+
+Favorites
+
+Weak Words
+
+Advanced Games
+
+PRO
+99,000 UZS/month
+
+Everything in Premium
+
+C1
+
+C2
+
+Academic Vocabulary
+
+Business Vocabulary
+
+Advanced Spelling
+
+Smart Review
+
+AI Recommendations
+
+AI Generated Examples
+
+Future AI Tutor support
+
+========================
+ADMIN PANEL
+========================
+
+Vocabulary Management
+
+User Management
+
+Subscription Management
+
+Analytics
+
+Reports
+
+Content Upload
+
+CSV Import
+
+========================
+PERFORMANCE
+========================
+
+Fast Loading
+
+Caching
+
+Lazy Loading
+
+Responsive
+
+Offline Mode (PWA)
+
+SEO Ready
+
+Accessibility
+
+========================
+DESIGN
+========================
+
+World-class UI/UX
+
+Modern animations
+
+Premium feeling
+
+Minimalist
+
+Responsive
+
+Dark Mode
+
+Light Mode
+
+Beautiful onboarding
+
+Empty states
+
+Loading states
+
+Professional icons
+
+Consistent spacing
+
+========================
+CODE QUALITY
+========================
+
+Refactor where necessary.
+
+Remove duplicated code.
+
+Improve architecture.
+
+Follow best practices.
+
+Keep everything modular.
+
+Write scalable code.
+
+========================
+FINAL GOAL
+========================
+
+The product should be launch-ready, investor-ready, visually impressive, and capable of becoming the #1 English vocabulary learning platform in Central Asia.

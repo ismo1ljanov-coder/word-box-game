@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
 export interface StatsSummary {
@@ -13,4 +13,9 @@ export interface StatsSummary {
   averageScore: number;
   streakDays: number;
   totalXp: number;
+  totalCoins: number;
+  dailyGoalTarget: number;
+  dailyGoalCompleted: number;
+  weeklyXp: number;
+  favoriteWords: number;
 }

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { WordLevel } from './wordLevel';
 
@@ -14,6 +14,8 @@ export interface Word {
   translation: string;
   level: WordLevel;
   category: string;
+  /** @nullable */
+  partOfSpeech?: string | null;
   /** @nullable */
   exampleSentence?: string | null;
   /** @nullable */

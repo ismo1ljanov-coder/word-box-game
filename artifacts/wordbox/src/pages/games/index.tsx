@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Brain, Grid3X3, Layers, Layers3, SpellCheck2, Play } from "lucide-react";
+import { Brain, Grid3X3, Layers, Layers3, SpellCheck2, Play, Swords } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const GAMES = [
   {
@@ -12,7 +13,7 @@ const GAMES = [
     color: "bg-blue-500",
     lightColor: "bg-blue-500/10",
     textColor: "text-blue-500",
-    tags: ["Tezkor", "Xotira"]
+    tags: ["Tezkor", "Xotira"],
   },
   {
     id: "crossword",
@@ -22,7 +23,7 @@ const GAMES = [
     color: "bg-purple-500",
     lightColor: "bg-purple-500/10",
     textColor: "text-purple-500",
-    tags: ["Qiziqarli", "Imlo"]
+    tags: ["Qiziqarli", "Imlo"],
   },
   {
     id: "flashcard",
@@ -32,7 +33,7 @@ const GAMES = [
     color: "bg-orange-500",
     lightColor: "bg-orange-500/10",
     textColor: "text-orange-500",
-    tags: ["Yodlash", "Takrorlash"]
+    tags: ["Yodlash", "Takrorlash"],
   },
   {
     id: "matching",
@@ -42,7 +43,7 @@ const GAMES = [
     color: "bg-green-500",
     lightColor: "bg-green-500/10",
     textColor: "text-green-500",
-    tags: ["Mantiq", "Tezlik"]
+    tags: ["Mantiq", "Tezlik"],
   },
   {
     id: "spelling",
@@ -52,8 +53,8 @@ const GAMES = [
     color: "bg-red-500",
     lightColor: "bg-red-500/10",
     textColor: "text-red-500",
-    tags: ["Yozish", "Qiyin"]
-  }
+    tags: ["Yozish", "Qiyin"],
+  },
 ];
 
 export default function GamesHub() {
@@ -63,6 +64,30 @@ export default function GamesHub() {
         <h1 className="text-4xl font-black tracking-tight">O'yinlar</h1>
         <p className="text-muted-foreground mt-2 text-lg">O'ynab o'rganing! O'zingizga yoqqan usulni tanlang.</p>
       </header>
+
+      <Link href="/games/daily-challenge">
+        <Card className="rounded-3xl border-none cursor-pointer hover-elevate transition-all overflow-hidden bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center">
+                  <Swords className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-2xl font-black">Kunlik musobaqa</h3>
+                    <Badge className="bg-white/20 text-white border-0 font-bold">+50 tanga</Badge>
+                  </div>
+                  <p className="text-white/80 font-medium">Bugungi 10 ta so'zni o'rganing va mukofot oling</p>
+                </div>
+              </div>
+              <Button className="bg-white/20 hover:bg-white/30 text-white border-0 rounded-xl font-bold px-6 hidden md:flex">
+                Boshlash <Play className="ml-2 w-4 h-4 fill-current" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {GAMES.map((game) => (
@@ -75,7 +100,7 @@ export default function GamesHub() {
                 </div>
                 <div className="p-6">
                   <div className="flex gap-2 mb-3">
-                    {game.tags.map(tag => (
+                    {game.tags.map((tag) => (
                       <Badge key={tag} variant="secondary" className="rounded-md font-bold text-xs bg-muted">
                         {tag}
                       </Badge>
@@ -83,7 +108,6 @@ export default function GamesHub() {
                   </div>
                   <h3 className="text-2xl font-black tracking-tight mb-2">{game.title}</h3>
                   <p className="text-muted-foreground font-medium mb-6">{game.description}</p>
-                  
                   <div className={`flex items-center gap-2 font-bold ${game.textColor}`}>
                     O'ynash <Play className="w-4 h-4 fill-current" />
                   </div>

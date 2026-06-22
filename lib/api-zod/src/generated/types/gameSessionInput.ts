@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Wordbox API - English vocabulary learning platform
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { GameSessionInputGameType } from './gameSessionInputGameType';
 import type { GameSessionInputLevel } from './gameSessionInputLevel';
@@ -14,4 +14,6 @@ export interface GameSessionInput {
   score: number;
   totalQuestions: number;
   correctAnswers: number;
+  /** @nullable */
+  coinsEarned?: number | null;
 }

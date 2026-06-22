@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const levelEnum = pgEnum("level", ["A1", "A2", "B1", "B2", "C1", "C2"]);
-export const gameTypeEnum = pgEnum("game_type", ["quiz", "crossword", "flashcard", "matching", "spelling"]);
+export const gameTypeEnum = pgEnum("game_type", ["quiz", "crossword", "flashcard", "matching", "spelling", "daily_challenge"]);
 
 export const wordsTable = pgTable("words", {
   id: serial("id").primaryKey(),
@@ -11,6 +11,7 @@ export const wordsTable = pgTable("words", {
   translation: text("translation").notNull(),
   level: levelEnum("level").notNull(),
   category: text("category").notNull(),
+  partOfSpeech: text("part_of_speech"),
   exampleSentence: text("example_sentence"),
   exampleTranslation: text("example_translation"),
   phonetic: text("phonetic"),
@@ -22,6 +23,7 @@ export const wordProgressTable = pgTable("word_progress", {
   learned: boolean("learned").notNull().default(false),
   practiceCount: integer("practice_count").notNull().default(0),
   score: integer("score").notNull().default(0),
+  isFavorite: boolean("is_favorite").notNull().default(false),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -32,6 +34,7 @@ export const gameSessionsTable = pgTable("game_sessions", {
   score: integer("score").notNull(),
   totalQuestions: integer("total_questions").notNull(),
   correctAnswers: integer("correct_answers").notNull(),
+  coinsEarned: integer("coins_earned").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
