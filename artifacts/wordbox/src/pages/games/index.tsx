@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Brain, Grid3X3, Layers, Layers3, SpellCheck2, Play, Swords } from "lucide-react";
+import { Brain, Grid3X3, Layers, Layers3, SpellCheck2, Play, Swords, Shuffle, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -14,6 +14,29 @@ const GAMES = [
     lightColor: "bg-blue-500/10",
     textColor: "text-blue-500",
     tags: ["Tezkor", "Xotira"],
+    isNew: false,
+  },
+  {
+    id: "speed-quiz",
+    title: "Tezkor test",
+    description: "Har savolga 10 soniya — bosim ostida o'yna!",
+    icon: Zap,
+    color: "bg-yellow-500",
+    lightColor: "bg-yellow-500/10",
+    textColor: "text-yellow-600",
+    tags: ["Tezlik", "Bosim"],
+    isNew: true,
+  },
+  {
+    id: "anagram",
+    title: "Anagram",
+    description: "Aralashtirilgan harflardan so'z tuz",
+    icon: Shuffle,
+    color: "bg-indigo-500",
+    lightColor: "bg-indigo-500/10",
+    textColor: "text-indigo-500",
+    tags: ["Qiziqarli", "Mantiq"],
+    isNew: true,
   },
   {
     id: "crossword",
@@ -24,6 +47,7 @@ const GAMES = [
     lightColor: "bg-purple-500/10",
     textColor: "text-purple-500",
     tags: ["Qiziqarli", "Imlo"],
+    isNew: false,
   },
   {
     id: "flashcard",
@@ -34,6 +58,7 @@ const GAMES = [
     lightColor: "bg-orange-500/10",
     textColor: "text-orange-500",
     tags: ["Yodlash", "Takrorlash"],
+    isNew: false,
   },
   {
     id: "matching",
@@ -44,6 +69,7 @@ const GAMES = [
     lightColor: "bg-green-500/10",
     textColor: "text-green-500",
     tags: ["Mantiq", "Tezlik"],
+    isNew: false,
   },
   {
     id: "spelling",
@@ -54,6 +80,7 @@ const GAMES = [
     lightColor: "bg-red-500/10",
     textColor: "text-red-500",
     tags: ["Yozish", "Qiyin"],
+    isNew: false,
   },
 ];
 
@@ -96,6 +123,11 @@ export default function GamesHub() {
               <CardContent className="p-0">
                 <div className={`${game.lightColor} p-8 flex justify-center items-center relative overflow-hidden`}>
                   <div className={`absolute top-0 right-0 w-32 h-32 ${game.color} opacity-10 rounded-full blur-2xl -mr-10 -mt-10`} />
+                  {game.isNew && (
+                    <div className="absolute top-3 right-3">
+                      <Badge className="bg-emerald-500 text-white border-0 font-bold text-xs">Yangi</Badge>
+                    </div>
+                  )}
                   <game.icon className={`w-20 h-20 ${game.textColor} transform group-hover:scale-110 transition-transform duration-300`} />
                 </div>
                 <div className="p-6">

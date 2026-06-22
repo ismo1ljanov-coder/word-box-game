@@ -13,6 +13,8 @@ import CrosswordGame from "@/pages/games/crossword";
 import FlashcardGame from "@/pages/games/flashcard";
 import MatchingGame from "@/pages/games/matching";
 import SpellingGame from "@/pages/games/spelling";
+import AnagramGame from "@/pages/games/anagram";
+import SpeedQuizGame from "@/pages/games/speed-quiz";
 import DailyChallenge from "@/pages/games/daily-challenge";
 import Stats from "@/pages/stats";
 import Profile from "@/pages/profile";
@@ -41,6 +43,8 @@ function Router() {
         <Route path="/games/flashcard" component={FlashcardGame} />
         <Route path="/games/matching" component={MatchingGame} />
         <Route path="/games/spelling" component={SpellingGame} />
+        <Route path="/games/anagram" component={AnagramGame} />
+        <Route path="/games/speed-quiz" component={SpeedQuizGame} />
         <Route path="/games/daily-challenge" component={DailyChallenge} />
         <Route path="/stats" component={Stats} />
         <Route path="/profile" component={Profile} />
