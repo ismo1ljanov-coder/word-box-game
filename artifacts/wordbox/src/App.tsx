@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "@/components/layout/AppLayout";
 import AdminLayout, { AdminRoute } from "@/components/layout/AdminLayout";
+import { usePageTracking } from "@/hooks/use-page-tracking";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AdminDashboard from "@/pages/admin/index";
@@ -69,6 +70,7 @@ function PublicOnly({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
+  usePageTracking();
   return (
     <Switch>
       <Route path="/login">

@@ -4,6 +4,7 @@ import { usersTable, wordsTable, wordProgressTable, gameSessionsTable, analytics
 import { eq, ilike, or, sql, and, desc, asc, count, sum } from "drizzle-orm";
 import { requireAdmin } from "../middleware/auth";
 import { z } from "zod";
+import { parse as parseCsv } from "csv-parse/sync";
 
 const router = Router();
 
@@ -238,12 +239,21 @@ router.get("/admin/analytics", async (req, res) => {
     .groupBy(wordsTable.level)
     .orderBy(asc(wordsTable.level));
 
-  // Daily active users for last 30 days
+  // Daily active users for last 30 days (MAU trend)
   const dauTrend = await db.select({
     date: sql<string>`date_trunc('day', ${usersTable.lastActiveAt})::date::text`,
     count: count(),
   }).from(usersTable)
     .where(sql`${usersTable.lastActiveAt} >= ${monthAgo}`)
+    .groupBy(sql`date_trunc('day', ${usersTable.lastActiveAt})`)
+    .orderBy(asc(sql`date_trunc('day', ${usersTable.lastActiveAt})`));
+
+  // Daily active users for last 7 days (WAU breakdown)
+  const wauTrend = await db.select({
+    date: sql<string>`date_trunc('day', ${usersTable.lastActiveAt})::date::text`,
+    count: count(),
+  }).from(usersTable)
+    .where(sql`${usersTable.lastActiveAt} >= ${weekAgo}`)
     .groupBy(sql`date_trunc('day', ${usersTable.lastActiveAt})`)
     .orderBy(asc(sql`date_trunc('day', ${usersTable.lastActiveAt})`));
 
@@ -268,6 +278,7 @@ router.get("/admin/analytics", async (req, res) => {
     wau: wau.count,
     mau: mau.count,
     dauTrend,
+    wauTrend,
     topLearned,
     hardestWords,
     levelRates,
@@ -351,7 +362,18 @@ router.get("/admin/words/export-csv", async (_req, res) => {
   res.send(header + rows);
 });
 
-// CSV import (accepts text/csv or application/octet-stream body)
+const rowSchema = z.object({
+  word: z.string().min(1).max(200),
+  translation: z.string().min(1).max(200),
+  level: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
+  category: z.string().min(1).max(100),
+  part_of_speech: z.string().optional(),
+  example_sentence: z.string().optional(),
+  example_translation: z.string().optional(),
+  phonetic: z.string().optional(),
+});
+
+// CSV import (accepts text/csv body)
 router.post("/admin/words/import-csv", async (req, res) => {
   let rawBody = "";
   await new Promise<void>((resolve, reject) => {
@@ -361,76 +383,75 @@ router.post("/admin/words/import-csv", async (req, res) => {
     req.on("error", reject);
   });
 
-  const lines = rawBody.split("\n").map((l) => l.trim()).filter(Boolean);
-  if (lines.length < 2) { res.status(400).json({ error: "CSV must have a header row and at least one data row" }); return; }
+  if (!rawBody.trim()) {
+    res.status(400).json({ error: "Empty CSV body" });
+    return;
+  }
 
-  // Parse header to find column indices
-  const parseCsvLine = (line: string): string[] => {
-    const result: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') {
-        if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
-        else { inQuotes = !inQuotes; }
-      } else if (c === "," && !inQuotes) {
-        result.push(current); current = "";
-      } else {
-        current += c;
-      }
-    }
-    result.push(current);
-    return result;
-  };
+  let records: Record<string, string>[];
+  try {
+    records = parseCsv(rawBody, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      relax_column_count: true,
+    }) as Record<string, string>[];
+  } catch (e) {
+    res.status(400).json({ error: `CSV parse error: ${(e as Error).message}` });
+    return;
+  }
 
-  const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase().trim());
-  const getIdx = (name: string) => headers.indexOf(name);
+  if (records.length === 0) {
+    res.status(400).json({ error: "CSV must have a header row and at least one data row" });
+    return;
+  }
 
-  const wordIdx = getIdx("word");
-  const translationIdx = getIdx("translation");
-  const levelIdx = getIdx("level");
-  const categoryIdx = getIdx("category");
-
-  if (wordIdx < 0 || translationIdx < 0 || levelIdx < 0 || categoryIdx < 0) {
+  const firstRow = records[0];
+  const headers = Object.keys(firstRow).map((h) => h.toLowerCase());
+  if (!headers.includes("word") || !headers.includes("translation") || !headers.includes("level") || !headers.includes("category")) {
     res.status(400).json({ error: "CSV must have columns: word, translation, level, category" });
     return;
   }
 
-  const rowSchema = z.object({
-    word: z.string().min(1).max(200),
-    translation: z.string().min(1).max(200),
-    level: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
-    category: z.string().min(1).max(100),
-    partOfSpeech: z.string().optional(),
-    exampleSentence: z.string().optional(),
-    exampleTranslation: z.string().optional(),
-    phonetic: z.string().optional(),
-  });
-
   const valid: z.infer<typeof rowSchema>[] = [];
   const errors: { row: number; error: string }[] = [];
 
-  for (let i = 1; i < lines.length; i++) {
-    const cols = parseCsvLine(lines[i]);
+  for (let i = 0; i < records.length; i++) {
+    const rec = records[i];
+    const normalized = Object.fromEntries(
+      Object.entries(rec).map(([k, v]) => [k.toLowerCase(), v])
+    );
     const row = {
-      word: cols[wordIdx]?.trim() ?? "",
-      translation: cols[translationIdx]?.trim() ?? "",
-      level: cols[levelIdx]?.trim().toUpperCase() ?? "",
-      category: cols[categoryIdx]?.trim() ?? "",
-      partOfSpeech: cols[getIdx("part_of_speech")]?.trim() || undefined,
-      exampleSentence: cols[getIdx("example_sentence")]?.trim() || undefined,
-      exampleTranslation: cols[getIdx("example_translation")]?.trim() || undefined,
-      phonetic: cols[getIdx("phonetic")]?.trim() || undefined,
+      word: normalized["word"] ?? "",
+      translation: normalized["translation"] ?? "",
+      level: (normalized["level"] ?? "").toUpperCase(),
+      category: normalized["category"] ?? "",
+      part_of_speech: normalized["part_of_speech"] || undefined,
+      example_sentence: normalized["example_sentence"] || undefined,
+      example_translation: normalized["example_translation"] || undefined,
+      phonetic: normalized["phonetic"] || undefined,
     };
     const parsed = rowSchema.safeParse(row);
-    if (parsed.success) valid.push(parsed.data);
-    else errors.push({ row: i + 1, error: parsed.error.issues.map((e) => e.message).join(", ") });
+    if (parsed.success) {
+      valid.push(parsed.data);
+    } else {
+      errors.push({ row: i + 2, error: parsed.error.issues.map((e) => e.message).join(", ") });
+    }
   }
 
   let imported = 0;
   if (valid.length > 0) {
-    const result = await db.insert(wordsTable).values(valid)
+    const insertRows = valid.map((r) => ({
+      word: r.word,
+      translation: r.translation,
+      level: r.level as "A1" | "A2" | "B1" | "B2" | "C1" | "C2",
+      category: r.category,
+      partOfSpeech: r.part_of_speech,
+      exampleSentence: r.example_sentence,
+      exampleTranslation: r.example_translation,
+      phonetic: r.phonetic,
+    }));
+    const result = await db.insert(wordsTable).values(insertRows)
       .onConflictDoNothing({ target: [wordsTable.word, wordsTable.level] })
       .returning({ id: wordsTable.id });
     imported = result.length;

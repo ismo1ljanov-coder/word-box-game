@@ -1470,7 +1470,7 @@ components:
 
     AdminAnalytics:
       type: object
-      required: [dau, wau, mau, dauTrend, topLearned, hardestWords, levelRates, avgSessionScore, avgCorrectRate, eventCounts]
+      required: [dau, wau, mau, dauTrend, wauTrend, topLearned, hardestWords, levelRates, avgSessionScore, avgCorrectRate, eventCounts]
       properties:
         dau:
           type: integer
@@ -1479,6 +1479,10 @@ components:
         mau:
           type: integer
         dauTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAnalyticsTrendDay"
+        wauTrend:
           type: array
           items:
             $ref: "#/components/schemas/AdminAnalyticsTrendDay"

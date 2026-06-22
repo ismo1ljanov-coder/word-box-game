@@ -16,6 +16,7 @@ export interface AdminAnalytics {
   wau: number;
   mau: number;
   dauTrend: AdminAnalyticsTrendDay[];
+  wauTrend: AdminAnalyticsTrendDay[];
   topLearned: AdminAnalyticsWordStat[];
   hardestWords: AdminAnalyticsHardestWordsItem[];
   levelRates: AdminAnalyticsLevelRatesItem[];

@@ -11,6 +11,7 @@ interface AnalyticsData {
   wau: number;
   mau: number;
   dauTrend: { date: string; count: number }[];
+  wauTrend: { date: string; count: number }[];
   topLearned: { word: string; translation: string; level: string; count: number }[];
   hardestWords: { word: string; translation: string; level: string; avgScore: number; practiceCount: number }[];
   levelRates: { level: string; totalWords: number; learnedWords: number }[];
@@ -111,28 +112,52 @@ export default function AdminAnalytics() {
         ))}
       </div>
 
-      {/* DAU trend */}
-      {data.dauTrend.length > 0 && (
-        <Card className="rounded-2xl border-none shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold">Kunlik faol foydalanuvchilar (so'nggi 30 kun)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={data.dauTrend} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d) => d.slice(5)} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                  formatter={(v) => [v, "Faol"]}
-                />
-                <Line type="monotone" dataKey="count" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
+      {/* DAU/WAU trends side by side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {data.dauTrend.length > 0 && (
+          <Card className="rounded-2xl border-none shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-bold">DAU/MAU trendi (so'nggi 30 kun)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={data.dauTrend} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d) => d.slice(5)} />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                    formatter={(v) => [v, "Faol"]}
+                  />
+                  <Line type="monotone" dataKey="count" stroke="#8b5cf6" strokeWidth={2} dot={false} name="DAU" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {data.wauTrend.length > 0 && (
+          <Card className="rounded-2xl border-none shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-bold">WAU trendi (so'nggi 7 kun)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={data.wauTrend} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d) => d.slice(5)} />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                    formatter={(v) => [v, "Faol"]}
+                  />
+                  <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} name="WAU" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Level completion rates */}
       <Card className="rounded-2xl border-none shadow-sm">

@@ -663,6 +663,10 @@ export const GetAdminAnalyticsResponse = zod.object({
   "date": zod.string(),
   "count": zod.number()
 })),
+  "wauTrend": zod.array(zod.object({
+  "date": zod.string(),
+  "count": zod.number()
+})),
   "topLearned": zod.array(zod.object({
   "wordId": zod.number(),
   "word": zod.string(),
