@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, wordsTable, wordProgressTable, gameSessionsTable, analyticsEventsTable, levelEnum } from "@workspace/db";
-import { eq, ilike, or, sql, and, desc, asc, count } from "drizzle-orm";
+import { eq, ilike, or, sql, and, desc, asc, count, sum } from "drizzle-orm";
 import { requireAdmin } from "../middleware/auth";
 import { z } from "zod";
 
@@ -247,11 +247,21 @@ router.get("/admin/analytics", async (req, res) => {
     .groupBy(sql`date_trunc('day', ${usersTable.lastActiveAt})`)
     .orderBy(asc(sql`date_trunc('day', ${usersTable.lastActiveAt})`));
 
-  // Average session score
+  // Average session score and duration
   const [avgSession] = await db.select({
     avgScore: sql<number>`round(avg(${gameSessionsTable.score}))`,
     avgCorrect: sql<number>`round(avg(${gameSessionsTable.correctAnswers}::float / nullif(${gameSessionsTable.totalQuestions}, 0) * 100))`,
+    avgDuration: sql<number>`round(avg(${gameSessionsTable.durationSeconds}))`,
   }).from(gameSessionsTable);
+
+  // Event counts from analytics_events for last 30 days
+  const eventCounts = await db.select({
+    eventType: analyticsEventsTable.eventType,
+    count: count(),
+  }).from(analyticsEventsTable)
+    .where(sql`${analyticsEventsTable.createdAt} >= ${monthAgo}`)
+    .groupBy(analyticsEventsTable.eventType)
+    .orderBy(desc(count()));
 
   res.json({
     dau: dau.count,
@@ -263,6 +273,8 @@ router.get("/admin/analytics", async (req, res) => {
     levelRates,
     avgSessionScore: avgSession.avgScore ?? 0,
     avgCorrectRate: avgSession.avgCorrect ?? 0,
+    avgSessionDuration: avgSession.avgDuration ?? null,
+    eventCounts,
   });
 });
 
@@ -418,7 +430,9 @@ router.post("/admin/words/import-csv", async (req, res) => {
 
   let imported = 0;
   if (valid.length > 0) {
-    const result = await db.insert(wordsTable).values(valid).onConflictDoNothing().returning({ id: wordsTable.id });
+    const result = await db.insert(wordsTable).values(valid)
+      .onConflictDoNothing({ target: [wordsTable.word, wordsTable.level] })
+      .returning({ id: wordsTable.id });
     imported = result.length;
   }
 

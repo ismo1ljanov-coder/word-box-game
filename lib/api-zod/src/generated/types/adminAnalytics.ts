@@ -5,6 +5,7 @@
  * Wordbox API - English vocabulary learning platform
  * OpenAPI spec version: 0.4.0
  */
+import type { AdminAnalyticsEventCountsItem } from './adminAnalyticsEventCountsItem';
 import type { AdminAnalyticsHardestWordsItem } from './adminAnalyticsHardestWordsItem';
 import type { AdminAnalyticsLevelRatesItem } from './adminAnalyticsLevelRatesItem';
 import type { AdminAnalyticsTrendDay } from './adminAnalyticsTrendDay';
@@ -20,4 +21,7 @@ export interface AdminAnalytics {
   levelRates: AdminAnalyticsLevelRatesItem[];
   avgSessionScore: number;
   avgCorrectRate: number;
+  /** Average session duration in seconds (null when no sessions with duration) */
+  avgSessionDuration: number;
+  eventCounts: AdminAnalyticsEventCountsItem[];
 }

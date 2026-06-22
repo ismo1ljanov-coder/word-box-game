@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, pgEnum, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -16,7 +16,9 @@ export const wordsTable = pgTable("words", {
   exampleSentence: text("example_sentence"),
   exampleTranslation: text("example_translation"),
   phonetic: text("phonetic"),
-});
+}, (t) => ({
+  wordLevelUnique: unique("words_word_level_unique").on(t.word, t.level),
+}));
 
 export const wordProgressTable = pgTable("word_progress", {
   id: serial("id").primaryKey(),
@@ -38,6 +40,7 @@ export const gameSessionsTable = pgTable("game_sessions", {
   totalQuestions: integer("total_questions").notNull(),
   correctAnswers: integer("correct_answers").notNull(),
   coinsEarned: integer("coins_earned").notNull().default(0),
+  durationSeconds: integer("duration_seconds"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

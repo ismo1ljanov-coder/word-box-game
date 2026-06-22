@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, ChevronLeft, ChevronRight, Ban, Trash2, RotateCcw, Crown } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Search, ChevronLeft, ChevronRight, Ban, Trash2, RotateCcw, Pencil, Check, X } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,15 +72,82 @@ async function grantTier(id: number, tier: string) {
   return res.json();
 }
 
-const TIER_COLOR: Record<string, string> = {
-  free: "secondary",
-  premium: "outline",
-  pro: "default",
-};
+async function updateUserName(id: number, fullName: string) {
+  const res = await fetch(`/api/admin/users/${id}`, {
+    method: "PUT", credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fullName }),
+  });
+  if (!res.ok) throw new Error("Update failed");
+  return res.json();
+}
 
 function fmtDate(s: string | null) {
   if (!s) return "—";
   return new Date(s).toLocaleDateString("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function InlineNameEdit({
+  userId,
+  initialName,
+  onSave,
+}: {
+  userId: number;
+  initialName: string;
+  onSave: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(initialName);
+  const { toast } = useToast();
+
+  const mut = useMutation({
+    mutationFn: () => updateUserName(userId, value.trim()),
+    onSuccess: () => { setEditing(false); onSave(); },
+    onError: () => toast({ title: "Xatolik", variant: "destructive" }),
+  });
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-1 group">
+        <span className="font-medium">{initialName}</span>
+        <button
+          className="opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={() => { setValue(initialName); setEditing(true); }}
+          title="Ismni tahrirlash"
+        >
+          <Pencil className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && value.trim().length >= 2) mut.mutate();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        className="h-7 w-36 text-xs"
+        autoFocus
+      />
+      <Button
+        size="icon" variant="ghost" className="h-6 w-6 text-green-600"
+        onClick={() => { if (value.trim().length >= 2) mut.mutate(); }}
+        disabled={mut.isPending || value.trim().length < 2}
+      >
+        <Check className="w-3 h-3" />
+      </Button>
+      <Button
+        size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground"
+        onClick={() => setEditing(false)}
+      >
+        <X className="w-3 h-3" />
+      </Button>
+    </div>
+  );
 }
 
 export default function AdminUsers() {
@@ -149,10 +216,16 @@ export default function AdminUsers() {
                   {data?.items.map((user) => (
                     <tr key={user.id} className={`border-b last:border-0 hover:bg-muted/20 transition-colors ${user.isBanned ? "opacity-50" : ""}`}>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{user.fullName}</span>
-                          {user.isAdmin && <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">Admin</Badge>}
-                          {user.isBanned && <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-red-500 border-red-300">Bloklangan</Badge>}
+                        <div className="flex flex-col gap-0.5">
+                          <InlineNameEdit
+                            userId={user.id}
+                            initialName={user.fullName}
+                            onSave={invalidate}
+                          />
+                          <div className="flex gap-1">
+                            {user.isAdmin && <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">Admin</Badge>}
+                            {user.isBanned && <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-red-500 border-red-300">Bloklangan</Badge>}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>

@@ -14,6 +14,8 @@ export interface GameSessionInput {
   score: number;
   totalQuestions: number;
   correctAnswers: number;
+  /** How long the session took in seconds */
+  durationSeconds?: number;
   /** @nullable */
   coinsEarned?: number | null;
 }

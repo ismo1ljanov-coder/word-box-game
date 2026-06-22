@@ -216,6 +216,8 @@ export interface GameSessionInput {
   score: number;
   totalQuestions: number;
   correctAnswers: number;
+  /** How long the session took in seconds */
+  durationSeconds?: number;
   /** @nullable */
   coinsEarned?: number | null;
 }
@@ -459,6 +461,11 @@ export type AdminAnalyticsHardestWordsItem = { [key: string]: unknown };
 
 export type AdminAnalyticsLevelRatesItem = { [key: string]: unknown };
 
+export type AdminAnalyticsEventCountsItem = {
+  eventType?: string;
+  count?: number;
+};
+
 export interface AdminAnalytics {
   dau: number;
   wau: number;
@@ -469,6 +476,9 @@ export interface AdminAnalytics {
   levelRates: AdminAnalyticsLevelRatesItem[];
   avgSessionScore: number;
   avgCorrectRate: number;
+  /** Average session duration in seconds (null when no sessions with duration) */
+  avgSessionDuration: number;
+  eventCounts: AdminAnalyticsEventCountsItem[];
 }
 
 export interface AdminWordListResponse {

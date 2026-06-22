@@ -254,6 +254,7 @@ export const CreateGameSessionBody = zod.object({
   "score": zod.number(),
   "totalQuestions": zod.number(),
   "correctAnswers": zod.number(),
+  "durationSeconds": zod.number().optional().describe('How long the session took in seconds'),
   "coinsEarned": zod.number().nullish()
 })
 
@@ -676,7 +677,12 @@ export const GetAdminAnalyticsResponse = zod.object({
 
 }).passthrough()),
   "avgSessionScore": zod.number(),
-  "avgCorrectRate": zod.number()
+  "avgCorrectRate": zod.number(),
+  "avgSessionDuration": zod.number().describe('Average session duration in seconds (null when no sessions with duration)'),
+  "eventCounts": zod.array(zod.object({
+  "eventType": zod.string().optional(),
+  "count": zod.number().optional()
+}))
 })
 
 

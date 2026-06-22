@@ -1104,6 +1104,9 @@ components:
           type: integer
         correctAnswers:
           type: integer
+        durationSeconds:
+          type: integer
+          description: How long the session took in seconds
         coinsEarned:
           type: ["integer", "null"]
 
@@ -1467,7 +1470,7 @@ components:
 
     AdminAnalytics:
       type: object
-      required: [dau, wau, mau, dauTrend, topLearned, hardestWords, levelRates, avgSessionScore, avgCorrectRate]
+      required: [dau, wau, mau, dauTrend, topLearned, hardestWords, levelRates, avgSessionScore, avgCorrectRate, avgSessionDuration, eventCounts]
       properties:
         dau:
           type: integer
@@ -1495,6 +1498,18 @@ components:
           type: integer
         avgCorrectRate:
           type: integer
+        avgSessionDuration:
+          type: integer
+          description: Average session duration in seconds (null when no sessions with duration)
+        eventCounts:
+          type: array
+          items:
+            type: object
+            properties:
+              eventType:
+                type: string
+              count:
+                type: integer
 
     AdminWordListResponse:
       type: object

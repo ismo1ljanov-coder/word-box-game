@@ -5,6 +5,7 @@ import { ListWordsQueryParams, GetWordParams, MarkWordProgressParams, MarkWordPr
 import { eq, and, ilike, sql } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
+import { logEvent } from "../middleware/analytics";
 
 const router = Router();
 
@@ -202,6 +203,8 @@ router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
       isFavorite: created.isFavorite,
     };
   }
+
+  logEvent(userId, "word_practiced", { wordId, correct, score: result.score, learned: result.learned });
 
   await recordActivity(userId);
   // Award 10 XP per correct answer here (single source of truth per answer).

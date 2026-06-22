@@ -5,6 +5,7 @@ import { GetCrosswordPuzzleQueryParams, GetQuizWordsQueryParams, CreateGameSessi
 import { eq, sql, and, gte } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
+import { logEvent } from "../middleware/analytics";
 
 const router = Router();
 
@@ -44,6 +45,15 @@ router.post("/games/sessions", requireAuth, async (req, res) => {
     .insert(gameSessionsTable)
     .values({ ...parsed.data, userId, coinsEarned })
     .returning();
+
+  logEvent(userId, "game_completed", {
+    gameType: session.gameType,
+    level: session.level,
+    score: session.score,
+    correctAnswers: session.correctAnswers,
+    totalQuestions: session.totalQuestions,
+    durationSeconds: session.durationSeconds ?? undefined,
+  });
 
   // XP per correct answer is awarded in words/:wordId/progress (10 XP each).
   // Game session awards only the 5 XP completion bonus to avoid double-counting.

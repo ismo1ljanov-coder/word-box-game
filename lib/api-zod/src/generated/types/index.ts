@@ -10,6 +10,7 @@ export * from './achievement';
 export * from './achievementFull';
 export * from './activityDay';
 export * from './adminAnalytics';
+export * from './adminAnalyticsEventCountsItem';
 export * from './adminAnalyticsHardestWordsItem';
 export * from './adminAnalyticsLevelRatesItem';
 export * from './adminAnalyticsTrendDay';
