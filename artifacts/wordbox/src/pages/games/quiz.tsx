@@ -135,6 +135,9 @@ export default function QuizGame() {
   }
 
   const question = questions[currentIdx];
+  const wordText = question?.word || "—";
+  const correctAnswer = question?.correctAnswer || "";
+  const options = question?.options || [];
   const progress = ((currentIdx + 1) / questions.length) * 100;
 
   return (
@@ -149,13 +152,13 @@ export default function QuizGame() {
 
       <div className="text-center py-10">
         <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Tarjima qiling</div>
-        <h2 className="text-5xl font-black tracking-tight" data-testid="text-word">{question.word}</h2>
+        <h2 className="text-5xl font-black tracking-tight" data-testid="text-word">{wordText}</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {question.options.map((option, i) => {
+        {options.map((option, i) => {
           const isSelected = selectedAnswer === option;
-          const isCorrect = option === question.correctAnswer;
+          const isCorrect = option === correctAnswer;
           const showStatus = selectedAnswer !== null;
           let btnClass = "border-2 bg-card hover:bg-muted";
           if (showStatus) {
@@ -167,12 +170,13 @@ export default function QuizGame() {
             <Button
               key={i}
               variant="outline"
-              className={cn("h-auto min-h-[5rem] rounded-2xl text-lg font-bold transition-all justify-between px-6 py-4 whitespace-normal text-left", btnClass)}
+              className={cn("h-auto min-h-[5rem] rounded-2xl text-lg font-bold transition-all justify-between px-6 py-4 whitespace-normal text-left focus:outline-none focus:ring-0 active:outline-none", btnClass)}
               onClick={() => handleAnswer(option)}
+              onMouseDown={(e) => e.preventDefault()}
               disabled={selectedAnswer !== null}
               data-testid={`button-option-${i}`}
             >
-              <span>{option}</span>
+              <span>{option || "—"}</span>
               {showStatus && isCorrect && <Check className="w-6 h-6 text-green-500 shrink-0 ml-2" />}
               {showStatus && isSelected && !isCorrect && <X className="w-6 h-6 text-red-500 shrink-0 ml-2" />}
             </Button>

@@ -177,6 +177,9 @@ export default function DailyChallenge() {
   }
 
   const currentQuestion = questions[currentIndex];
+  const wordText = currentQuestion?.word || "—";
+  const correctAnswer = currentQuestion?.correctAnswer || "";
+  const options = currentQuestion?.options || [];
   const progress = ((currentIndex) / questions.length) * 100;
 
   return (
@@ -206,33 +209,31 @@ export default function DailyChallenge() {
         <CardContent className="p-8">
           <div className="text-center mb-8">
             <p className="text-sm font-bold text-muted-foreground mb-2">So'zni tarjima qiling</p>
-            <h2 className="text-5xl font-black tracking-tight">{currentQuestion.word}</h2>
+            <h2 className="text-5xl font-black tracking-tight">{wordText}</h2>
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-            {currentQuestion.options.map((option) => {
-              let variant: "outline" | "default" = "outline";
-              let extraClass = "hover:bg-primary/5 hover:border-primary/50";
-
-              if (selectedAnswer === option) {
-                if (answerState === "correct") {
-                  extraClass = "bg-emerald-500/10 border-emerald-500 text-emerald-600";
-                } else if (answerState === "wrong") {
-                  extraClass = "bg-red-500/10 border-red-500 text-red-600";
-                }
-              } else if (answerState !== "idle" && option === currentQuestion.correctAnswer) {
-                extraClass = "bg-emerald-500/10 border-emerald-500 text-emerald-600";
-              }
+            {options.map((option) => {
+              const extraClass = selectedAnswer === option
+                ? answerState === "correct"
+                  ? "bg-emerald-500/10 border-emerald-500 text-emerald-600"
+                  : answerState === "wrong"
+                  ? "bg-red-500/10 border-red-500 text-red-600"
+                  : "hover:bg-primary/5 hover:border-primary/50"
+                : answerState !== "idle" && option === correctAnswer
+                ? "bg-emerald-500/10 border-emerald-500 text-emerald-600"
+                : "hover:bg-primary/5 hover:border-primary/50";
 
               return (
                 <Button
                   key={option}
-                  variant={variant}
+                  variant="outline"
                   className={cn(
-                    "w-full h-auto py-4 text-left justify-start px-5 rounded-2xl font-bold text-base transition-all border-2",
+                    "w-full h-auto py-4 text-left justify-start px-5 rounded-2xl font-bold text-base transition-all border-2 focus:outline-none focus:ring-0 active:outline-none",
                     extraClass
                   )}
                   onClick={() => handleAnswer(option)}
+                  onMouseDown={(e) => e.preventDefault()}
                   disabled={answerState !== "idle"}
                 >
                   <span className="flex-1">{option}</span>

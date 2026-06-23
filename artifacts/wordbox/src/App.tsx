@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "@/components/layout/AppLayout";
 import AdminLayout, { AdminRoute } from "@/components/layout/AdminLayout";
 import { usePageTracking } from "@/hooks/use-page-tracking";
+import GameErrorBoundary from "@/components/GameErrorBoundary";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AdminDashboard from "@/pages/admin/index";
@@ -103,14 +104,14 @@ function Router() {
               <Route path="/words" component={Words} />
               <Route path="/favorites" component={Favorites} />
               <Route path="/games" component={GamesHub} />
-              <Route path="/games/quiz" component={QuizGame} />
-              <Route path="/games/crossword" component={CrosswordGame} />
-              <Route path="/games/flashcard" component={FlashcardGame} />
-              <Route path="/games/matching" component={MatchingGame} />
-              <Route path="/games/spelling" component={SpellingGame} />
-              <Route path="/games/anagram" component={AnagramGame} />
-              <Route path="/games/speed-quiz" component={SpeedQuizGame} />
-              <Route path="/games/daily-challenge" component={DailyChallenge} />
+              <Route path="/games/quiz">{() => <GameErrorBoundary gameName="Test"><QuizGame /></GameErrorBoundary>}</Route>
+              <Route path="/games/crossword">{() => <GameErrorBoundary gameName="Krossvord"><CrosswordGame /></GameErrorBoundary>}</Route>
+              <Route path="/games/flashcard">{() => <GameErrorBoundary gameName="Flesh kartalar"><FlashcardGame /></GameErrorBoundary>}</Route>
+              <Route path="/games/matching">{() => <GameErrorBoundary gameName="Moslashtirish"><MatchingGame /></GameErrorBoundary>}</Route>
+              <Route path="/games/spelling">{() => <GameErrorBoundary gameName="Imlo"><SpellingGame /></GameErrorBoundary>}</Route>
+              <Route path="/games/anagram">{() => <GameErrorBoundary gameName="Anagram"><AnagramGame /></GameErrorBoundary>}</Route>
+              <Route path="/games/speed-quiz">{() => <GameErrorBoundary gameName="Tezkor test"><SpeedQuizGame /></GameErrorBoundary>}</Route>
+              <Route path="/games/daily-challenge">{() => <GameErrorBoundary gameName="Kunlik musobaqa"><DailyChallenge /></GameErrorBoundary>}</Route>
               <Route path="/stats" component={Stats} />
               <Route path="/profile" component={Profile} />
               <Route path="/leaderboard" component={Leaderboard} />

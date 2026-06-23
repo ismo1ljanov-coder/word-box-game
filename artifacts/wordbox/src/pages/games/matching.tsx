@@ -199,17 +199,18 @@ export default function MatchingGame() {
                 key={`eng-${w.id}`}
                 variant="outline"
                 className={cn(
-                  "w-full rounded-2xl text-base md:text-lg font-bold transition-all whitespace-normal py-4 h-auto",
+                  "w-full rounded-2xl text-base md:text-lg font-bold transition-all whitespace-normal py-4 h-auto focus:outline-none focus:ring-0 active:outline-none",
                   isMatchedItem && "opacity-0 pointer-events-none scale-95",
                   isSelected && !isWrong && "border-primary bg-primary/10 text-primary ring-2 ring-primary/20",
                   isWrong && "border-red-500 bg-red-500/10 text-red-600 animate-shake",
                   !isMatchedItem && !isSelected && "hover:border-primary/50 hover:bg-muted"
                 )}
                 onClick={() => handleEngClick(w.id)}
+                onMouseDown={(e) => e.preventDefault()}
                 disabled={isMatchedItem}
                 data-testid={`button-eng-${w.id}`}
               >
-                {w.text}
+                {w.text || "—"}
               </Button>
             );
           })}
@@ -226,17 +227,18 @@ export default function MatchingGame() {
                 key={`uzb-${w.id}`}
                 variant="outline"
                 className={cn(
-                  "w-full rounded-2xl text-base md:text-lg font-bold transition-all whitespace-normal py-4 h-auto",
+                  "w-full rounded-2xl text-base md:text-lg font-bold transition-all whitespace-normal py-4 h-auto focus:outline-none focus:ring-0 active:outline-none",
                   isMatchedItem && "opacity-0 pointer-events-none scale-95",
                   isSelected && !isWrong && "border-green-500 bg-green-500/10 text-green-600 ring-2 ring-green-500/20",
                   isWrong && "border-red-500 bg-red-500/10 text-red-600 animate-shake",
                   !isMatchedItem && !isSelected && "hover:border-green-500/50 hover:bg-muted"
                 )}
                 onClick={() => handleUzbClick(w.id)}
+                onMouseDown={(e) => e.preventDefault()}
                 disabled={isMatchedItem}
                 data-testid={`button-uzb-${w.id}`}
               >
-                {w.text}
+                {w.text || "—"}
               </Button>
             );
           })}

@@ -234,15 +234,16 @@ export default function AnagramGame() {
                 <button
                   key={`sel-${item.id}-${i}`}
                   onClick={() => handleRemoveLetter(item)}
+                  onMouseDown={(e) => e.preventDefault()}
                   disabled={checkState !== "idle"}
                   className={cn(
-                    "w-11 h-11 rounded-xl font-black text-lg border-2 transition-all",
+                    "w-11 h-11 rounded-xl font-black text-lg border-2 transition-all focus:outline-none active:outline-none",
                     checkState === "correct" ? "bg-emerald-500 text-white border-emerald-500" :
                     checkState === "wrong" ? "bg-red-500 text-white border-red-500" :
                     "bg-background border-border hover:border-red-500/50 hover:bg-red-500/5"
                   )}
                 >
-                  {item.letter}
+                  {item.letter || "?"}
                 </button>
               ))}
               {checkState === "correct" && (
@@ -261,10 +262,11 @@ export default function AnagramGame() {
                 <button
                   key={`avail-${item.id}`}
                   onClick={() => handlePickLetter(item)}
+                  onMouseDown={(e) => e.preventDefault()}
                   disabled={checkState !== "idle"}
-                  className="w-11 h-11 rounded-xl font-black text-lg bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-2 border-indigo-500/20 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all active:scale-95"
+                  className="w-11 h-11 rounded-xl font-black text-lg bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-2 border-indigo-500/20 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all active:scale-95 focus:outline-none active:outline-none"
                 >
-                  {item.letter}
+                  {item.letter || "?"}
                 </button>
               ))}
               {availableLetters.length === 0 && checkState === "idle" && (

@@ -202,6 +202,10 @@ export default function SpeedQuizGame() {
     return <div className="flex items-center justify-center h-60 text-muted-foreground font-medium">Yuklanmoqda...</div>;
   }
 
+  const wordText = question.word || "—";
+  const correctAnswer = question.correctAnswer || "";
+  const options = question.options || [];
+
   return (
     <div className="max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-3">
@@ -239,17 +243,17 @@ export default function SpeedQuizGame() {
         <CardContent className="p-8">
           <div className="text-center mb-8">
             <p className="text-sm font-bold text-muted-foreground mb-2">So'zni tarjima qiling</p>
-            <h2 className="text-5xl font-black tracking-tight">{question.word}</h2>
+            <h2 className="text-5xl font-black tracking-tight">{wordText}</h2>
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-            {question.options.map((option) => {
+            {options.map((option) => {
               let extraClass = "hover:bg-primary/5 hover:border-primary/50";
               if (selectedAnswer === option) {
                 extraClass = answerState === "correct"
                   ? "bg-emerald-500/10 border-emerald-500 text-emerald-600"
                   : "bg-red-500/10 border-red-500 text-red-600";
-              } else if (answerState !== "idle" && option === question.correctAnswer) {
+              } else if (answerState !== "idle" && option === correctAnswer) {
                 extraClass = "bg-emerald-500/10 border-emerald-500 text-emerald-600";
               } else if (answerState === "timeout") {
                 extraClass = "opacity-50";
@@ -260,16 +264,17 @@ export default function SpeedQuizGame() {
                   key={option}
                   variant="outline"
                   className={cn(
-                    "w-full h-auto py-4 text-left justify-start px-5 rounded-2xl font-bold text-base transition-all border-2",
+                    "w-full h-auto py-4 text-left justify-start px-5 rounded-2xl font-bold text-base transition-all border-2 focus:outline-none focus:ring-0 active:outline-none",
                     extraClass
                   )}
                   onClick={() => handleAnswer(option)}
+                  onMouseDown={(e) => e.preventDefault()}
                   disabled={answerState !== "idle"}
                 >
-                  <span className="flex-1">{option}</span>
+                  <span className="flex-1">{option || "—"}</span>
                   {selectedAnswer === option && answerState === "correct" && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
                   {selectedAnswer === option && answerState === "wrong" && <XCircle className="w-5 h-5 text-red-500" />}
-                  {answerState === "timeout" && option === question.correctAnswer && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                  {answerState === "timeout" && option === correctAnswer && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
                 </Button>
               );
             })}

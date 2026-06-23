@@ -187,6 +187,25 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  /* ── Game button focus/active stability fix ──────────────────────────────
+   * Browsers can trap :focus and :active visual state on buttons after a
+   * rapid click → disable cycle (common in answer-reveal flows).
+   * We suppress the focus *ring* for pointer interactions while keeping it
+   * for keyboard navigation (:focus-visible).                              */
+  button:focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  button:disabled:focus,
+  button:disabled:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    ring: none;
+  }
+  button:disabled {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 @layer utilities {
