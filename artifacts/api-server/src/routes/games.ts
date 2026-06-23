@@ -2,8 +2,8 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { wordsTable, gameSessionsTable } from "@workspace/db";
 import { GetCrosswordPuzzleQueryParams, GetQuizWordsQueryParams, CreateGameSessionBody } from "@workspace/api-zod";
-import { eq, sql, and, gte } from "drizzle-orm";
-import { requireAuth } from "../middleware/auth";
+import { eq, sql, and, gte, inArray } from "drizzle-orm";
+import { requireAuth, TIER_LEVELS, PRO_GAME_TYPES, PREMIUM_GAME_TYPES } from "../middleware/auth";
 import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
 import { logEvent } from "../middleware/analytics";
 
@@ -40,6 +40,24 @@ router.post("/games/sessions", requireAuth, async (req, res) => {
     return;
   }
 
+  const userTier = req.user!.subscriptionTier;
+  const gameType = parsed.data.gameType;
+
+  if (PRO_GAME_TYPES.includes(gameType) && userTier !== "pro") {
+    res.status(403).json({
+      error: "Bu o'yin faqat Pro tarif uchun mavjud",
+      requiredTier: "pro",
+    });
+    return;
+  }
+  if (PREMIUM_GAME_TYPES.includes(gameType) && userTier === "free") {
+    res.status(403).json({
+      error: "Bu o'yin faqat Premium tarif uchun mavjud",
+      requiredTier: "premium",
+    });
+    return;
+  }
+
   const coinsEarned = parsed.data.correctAnswers * 2 + (parsed.data.correctAnswers === parsed.data.totalQuestions ? 10 : 0);
   const [session] = await db
     .insert(gameSessionsTable)
@@ -55,8 +73,6 @@ router.post("/games/sessions", requireAuth, async (req, res) => {
     durationSeconds: session.durationSeconds ?? undefined,
   });
 
-  // XP per correct answer is awarded in words/:wordId/progress (10 XP each).
-  // Game session awards only the 5 XP completion bonus to avoid double-counting.
   const xpEarned = 5;
   await recordActivity(userId);
   await awardXp(userId, xpEarned, coinsEarned);
@@ -76,11 +92,11 @@ router.post("/games/sessions", requireAuth, async (req, res) => {
 
 router.get("/games/daily-challenge", requireAuth, async (req, res) => {
   const userId = req.user!.id;
+  const userTier = req.user!.subscriptionTier;
+  const allowedLevels = TIER_LEVELS[userTier] ?? TIER_LEVELS.free;
   const BONUS_COINS = 50;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
 
   const [existingSession] = await db
     .select()
@@ -94,7 +110,12 @@ router.get("/games/daily-challenge", requireAuth, async (req, res) => {
     )
     .limit(1);
 
-  const words = await db.select().from(wordsTable).orderBy(sql`random()`).limit(10);
+  const words = await db
+    .select()
+    .from(wordsTable)
+    .where(inArray(wordsTable.level, allowedLevels))
+    .orderBy(sql`random()`)
+    .limit(10);
 
   if (words.length === 0) {
     res.json({ words: [], completedToday: false, bonusCoins: BONUS_COINS });
@@ -134,11 +155,25 @@ router.get("/games/quiz", requireAuth, async (req, res) => {
     return;
   }
 
+  const userTier = req.user!.subscriptionTier;
+  const allowedLevels = TIER_LEVELS[userTier] ?? TIER_LEVELS.free;
   const count = parsed.data.count ?? 10;
   const level = parsed.data.level;
 
+  if (level && !allowedLevels.includes(level)) {
+    res.status(403).json({
+      error: "Bu daraja sizning tarifingizda mavjud emas",
+      requiredTier: ["B1", "B2"].includes(level) ? "premium" : "pro",
+    });
+    return;
+  }
+
   let wordsQuery = db.select().from(wordsTable).$dynamic();
-  if (level) wordsQuery = wordsQuery.where(eq(wordsTable.level, level));
+  if (level) {
+    wordsQuery = wordsQuery.where(eq(wordsTable.level, level));
+  } else {
+    wordsQuery = wordsQuery.where(inArray(wordsTable.level, allowedLevels));
+  }
 
   const allWords = await wordsQuery.orderBy(sql`random()`).limit(count);
 
@@ -176,12 +211,24 @@ router.get("/games/crossword", requireAuth, async (req, res) => {
     return;
   }
 
+  const userTier = req.user!.subscriptionTier;
+  const allowedLevels = TIER_LEVELS[userTier] ?? TIER_LEVELS.free;
   const level = parsed.data.level ?? "A1";
 
-  let wordsQuery = db.select().from(wordsTable).$dynamic();
-  if (level) wordsQuery = wordsQuery.where(eq(wordsTable.level, level));
+  if (!allowedLevels.includes(level)) {
+    res.status(403).json({
+      error: "Bu daraja sizning tarifingizda mavjud emas",
+      requiredTier: ["B1", "B2"].includes(level) ? "premium" : "pro",
+    });
+    return;
+  }
 
-  const allWords = await wordsQuery.orderBy(sql`random()`).limit(50);
+  const allWords = await db
+    .select()
+    .from(wordsTable)
+    .where(eq(wordsTable.level, level))
+    .orderBy(sql`random()`)
+    .limit(50);
 
   const shortWords = allWords
     .filter((w) => w.word.length >= 3 && w.word.length <= 8 && /^[a-zA-Z]+$/.test(w.word))

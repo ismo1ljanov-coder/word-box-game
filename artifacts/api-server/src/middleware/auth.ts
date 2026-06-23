@@ -4,7 +4,6 @@ import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { User } from "@workspace/db";
 
-// Update lastActiveAt at most once per 5 minutes per user (fire-and-forget)
 const lastActiveCache = new Map<number, number>();
 function touchLastActive(userId: number) {
   const now = Date.now();
@@ -42,6 +41,12 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return;
   }
 
+  if (user.isBanned) {
+    req.session.destroy(() => {});
+    res.status(403).json({ error: "Hisobingiz bloklangan. Qo'llab-quvvatlash xizmatiga murojaat qiling." });
+    return;
+  }
+
   req.user = user;
   touchLastActive(user.id);
   next();
@@ -56,3 +61,35 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     next();
   });
 }
+
+const TIER_RANK: Record<string, number> = { free: 0, premium: 1, pro: 2 };
+
+export function requireTier(minTier: "free" | "premium" | "pro") {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      res.status(401).json({ error: "Tizimga kirish kerak" });
+      return;
+    }
+    const userRank = TIER_RANK[req.user.subscriptionTier] ?? 0;
+    const requiredRank = TIER_RANK[minTier] ?? 0;
+    if (userRank < requiredRank) {
+      res.status(403).json({
+        error: "Bu imkoniyat faqat yuqori tarif uchun mavjud",
+        requiredTier: minTier,
+      });
+      return;
+    }
+    next();
+  };
+}
+
+type CefrLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+
+export const TIER_LEVELS: Record<string, readonly CefrLevel[]> = {
+  free: ["A1", "A2"],
+  premium: ["A1", "A2", "B1", "B2"],
+  pro: ["A1", "A2", "B1", "B2", "C1", "C2"],
+};
+
+export const PRO_GAME_TYPES = ["anagram", "speed_quiz"];
+export const PREMIUM_GAME_TYPES = ["spelling"];

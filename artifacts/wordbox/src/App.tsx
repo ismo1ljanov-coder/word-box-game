@@ -2,12 +2,15 @@ import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { lazy, Suspense, useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import AdminLayout, { AdminRoute } from "@/components/layout/AdminLayout";
 import { usePageTracking } from "@/hooks/use-page-tracking";
 import GameErrorBoundary from "@/components/GameErrorBoundary";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import Onboarding, { isOnboardingComplete } from "@/components/Onboarding";
 import AdminDashboard from "@/pages/admin/index";
 import AdminUsers from "@/pages/admin/users";
 import AdminWords from "@/pages/admin/words";
@@ -16,14 +19,6 @@ import AdminAnalytics from "@/pages/admin/analytics";
 import Dashboard from "@/pages/dashboard";
 import Words from "@/pages/words";
 import GamesHub from "@/pages/games/index";
-import QuizGame from "@/pages/games/quiz";
-import CrosswordGame from "@/pages/games/crossword";
-import FlashcardGame from "@/pages/games/flashcard";
-import MatchingGame from "@/pages/games/matching";
-import SpellingGame from "@/pages/games/spelling";
-import AnagramGame from "@/pages/games/anagram";
-import SpeedQuizGame from "@/pages/games/speed-quiz";
-import DailyChallenge from "@/pages/games/daily-challenge";
 import Stats from "@/pages/stats";
 import Profile from "@/pages/profile";
 import Favorites from "@/pages/favorites";
@@ -32,6 +27,15 @@ import Leaderboard from "@/pages/leaderboard";
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
 import ForgotPasswordPage from "@/pages/auth/forgot-password";
+
+const QuizGame = lazy(() => import("@/pages/games/quiz"));
+const CrosswordGame = lazy(() => import("@/pages/games/crossword"));
+const FlashcardGame = lazy(() => import("@/pages/games/flashcard"));
+const MatchingGame = lazy(() => import("@/pages/games/matching"));
+const SpellingGame = lazy(() => import("@/pages/games/spelling"));
+const AnagramGame = lazy(() => import("@/pages/games/anagram"));
+const SpeedQuizGame = lazy(() => import("@/pages/games/speed-quiz"));
+const DailyChallenge = lazy(() => import("@/pages/games/daily-challenge"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,8 +46,26 @@ const queryClient = new QueryClient({
   },
 });
 
+function GameSuspenseFallback() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="bg-primary text-primary-foreground w-12 h-12 flex items-center justify-center rounded-2xl font-black text-xl animate-pulse">W</div>
+        <p className="text-muted-foreground text-sm">Yuklanmoqda...</p>
+      </div>
+    </div>
+  );
+}
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (user && !isOnboardingComplete()) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -60,7 +82,14 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return <Redirect to="/login" />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {showOnboarding && (
+        <Onboarding onComplete={() => setShowOnboarding(false)} />
+      )}
+      {children}
+    </>
+  );
 }
 
 function PublicOnly({ children }: { children: React.ReactNode }) {
@@ -104,14 +133,78 @@ function Router() {
               <Route path="/words" component={Words} />
               <Route path="/favorites" component={Favorites} />
               <Route path="/games" component={GamesHub} />
-              <Route path="/games/quiz">{() => <GameErrorBoundary gameName="Test"><QuizGame /></GameErrorBoundary>}</Route>
-              <Route path="/games/crossword">{() => <GameErrorBoundary gameName="Krossvord"><CrosswordGame /></GameErrorBoundary>}</Route>
-              <Route path="/games/flashcard">{() => <GameErrorBoundary gameName="Flesh kartalar"><FlashcardGame /></GameErrorBoundary>}</Route>
-              <Route path="/games/matching">{() => <GameErrorBoundary gameName="Moslashtirish"><MatchingGame /></GameErrorBoundary>}</Route>
-              <Route path="/games/spelling">{() => <GameErrorBoundary gameName="Imlo"><SpellingGame /></GameErrorBoundary>}</Route>
-              <Route path="/games/anagram">{() => <GameErrorBoundary gameName="Anagram"><AnagramGame /></GameErrorBoundary>}</Route>
-              <Route path="/games/speed-quiz">{() => <GameErrorBoundary gameName="Tezkor test"><SpeedQuizGame /></GameErrorBoundary>}</Route>
-              <Route path="/games/daily-challenge">{() => <GameErrorBoundary gameName="Kunlik musobaqa"><DailyChallenge /></GameErrorBoundary>}</Route>
+              <Route path="/games/quiz">
+                {() => (
+                  <GameErrorBoundary gameName="Test">
+                    <Suspense fallback={<GameSuspenseFallback />}>
+                      <QuizGame />
+                    </Suspense>
+                  </GameErrorBoundary>
+                )}
+              </Route>
+              <Route path="/games/crossword">
+                {() => (
+                  <GameErrorBoundary gameName="Krossvord">
+                    <Suspense fallback={<GameSuspenseFallback />}>
+                      <CrosswordGame />
+                    </Suspense>
+                  </GameErrorBoundary>
+                )}
+              </Route>
+              <Route path="/games/flashcard">
+                {() => (
+                  <GameErrorBoundary gameName="Flesh kartalar">
+                    <Suspense fallback={<GameSuspenseFallback />}>
+                      <FlashcardGame />
+                    </Suspense>
+                  </GameErrorBoundary>
+                )}
+              </Route>
+              <Route path="/games/matching">
+                {() => (
+                  <GameErrorBoundary gameName="Moslashtirish">
+                    <Suspense fallback={<GameSuspenseFallback />}>
+                      <MatchingGame />
+                    </Suspense>
+                  </GameErrorBoundary>
+                )}
+              </Route>
+              <Route path="/games/spelling">
+                {() => (
+                  <GameErrorBoundary gameName="Imlo">
+                    <Suspense fallback={<GameSuspenseFallback />}>
+                      <SpellingGame />
+                    </Suspense>
+                  </GameErrorBoundary>
+                )}
+              </Route>
+              <Route path="/games/anagram">
+                {() => (
+                  <GameErrorBoundary gameName="Anagram">
+                    <Suspense fallback={<GameSuspenseFallback />}>
+                      <AnagramGame />
+                    </Suspense>
+                  </GameErrorBoundary>
+                )}
+              </Route>
+              <Route path="/games/speed-quiz">
+                {() => (
+                  <GameErrorBoundary gameName="Tezkor test">
+                    <Suspense fallback={<GameSuspenseFallback />}>
+                      <SpeedQuizGame />
+                    </Suspense>
+                  </GameErrorBoundary>
+                )}
+              </Route>
+              <Route path="/games/daily-challenge">
+                {() => (
+                  <GameErrorBoundary gameName="Kunlik musobaqa">
+                    <Suspense fallback={<GameSuspenseFallback />}>
+                      <DailyChallenge />
+                    </Suspense>
+                  </GameErrorBoundary>
+                )}
+              </Route>
               <Route path="/stats" component={Stats} />
               <Route path="/profile" component={Profile} />
               <Route path="/leaderboard" component={Leaderboard} />
@@ -129,12 +222,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <AuthProvider>
-            <Router />
-          </AuthProvider>
-        </WouterRouter>
-        <Toaster />
+        <ThemeProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <AuthProvider>
+              <Router />
+            </AuthProvider>
+          </WouterRouter>
+          <Toaster />
+        </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

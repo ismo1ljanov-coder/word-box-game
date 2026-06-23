@@ -1,5 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -8,6 +10,13 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }),
+);
 
 app.use(
   pinoHttp({
@@ -28,7 +37,13 @@ app.use(
     },
   }),
 );
-app.use(cors({ origin: true, credentials: true }));
+
+const origin =
+  process.env.NODE_ENV === "production"
+    ? (process.env.REPLIT_DOMAINS?.split(",").map((d) => `https://${d.trim()}`) ?? [])
+    : (true as const);
+
+app.use(cors({ origin, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -58,6 +73,16 @@ app.use(
   })
 );
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skip: (req) => req.path === "/me" || req.path === "/logout",
+  message: { error: "Juda ko'p urinish. 15 daqiqadan so'ng qayta urinib ko'ring" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use("/api/auth", authLimiter);
 app.use("/api", router);
 
 export default app;

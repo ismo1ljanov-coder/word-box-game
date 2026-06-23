@@ -2,8 +2,8 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { wordsTable, wordProgressTable } from "@workspace/db";
 import { ListWordsQueryParams, GetWordParams, MarkWordProgressParams, MarkWordProgressBody, ToggleFavoriteParams } from "@workspace/api-zod";
-import { eq, and, ilike, sql } from "drizzle-orm";
-import { requireAuth } from "../middleware/auth";
+import { eq, and, ilike, sql, inArray } from "drizzle-orm";
+import { requireAuth, TIER_LEVELS } from "../middleware/auth";
 import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
 import { logEvent } from "../middleware/analytics";
 
@@ -11,6 +11,9 @@ const router = Router();
 
 router.get("/words", requireAuth, async (req, res) => {
   const userId = req.user!.id;
+  const userTier = req.user!.subscriptionTier;
+  const allowedLevels = TIER_LEVELS[userTier] ?? TIER_LEVELS.free;
+
   const parsed = ListWordsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid query params" });
@@ -22,8 +25,20 @@ router.get("/words", requireAuth, async (req, res) => {
   const pageSize = Math.min(100, Math.max(10, Number(req.query.pageSize) || 50));
   const offset = (page - 1) * pageSize;
 
+  if (level && !allowedLevels.includes(level)) {
+    res.status(403).json({
+      error: "Bu daraja sizning tarifingizda mavjud emas",
+      requiredTier: ["B1", "B2"].includes(level) ? "premium" : "pro",
+    });
+    return;
+  }
+
   const conditions = [];
-  if (level) conditions.push(eq(wordsTable.level, level));
+  if (level) {
+    conditions.push(eq(wordsTable.level, level));
+  } else {
+    conditions.push(inArray(wordsTable.level, allowedLevels));
+  }
   if (category) conditions.push(eq(wordsTable.category, category));
   if (search) conditions.push(ilike(wordsTable.word, `%${search}%`));
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -207,8 +222,6 @@ router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
   logEvent(userId, "word_practiced", { wordId, correct, score: result.score, learned: result.learned });
 
   await recordActivity(userId);
-  // Award 10 XP per correct answer here (single source of truth per answer).
-  // Games session completion awards only a +5 bonus (no per-answer XP there).
   if (correct) await awardXp(userId, 10, 0);
   await checkAndAwardAchievements(userId);
 

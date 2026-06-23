@@ -14,6 +14,7 @@ interface AuthContextValue {
   login: (phone: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (phone: string, fullName: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -77,8 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const refetchUser = useCallback(async () => {
+    await fetchMe();
+  }, [fetchMe]);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, refetchUser }}>
       {children}
     </AuthContext.Provider>
   );

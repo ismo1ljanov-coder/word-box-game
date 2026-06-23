@@ -1,14 +1,16 @@
 import { Link, useLocation } from "wouter";
-import { BookOpen, Gamepad2, Home, BarChart3, User, Heart, Crown, Trophy, Shield } from "lucide-react";
+import { BookOpen, Gamepad2, Home, BarChart3, User, Heart, Crown, Trophy, Shield, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGetStatsSummary } from "@workspace/api-client-react";
 import DailyRewardModal from "@/components/DailyRewardModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: stats } = useGetStatsSummary();
   const { user } = useAuth();
+  const [theme, toggleTheme] = useTheme();
 
   const navItems = [
     { href: "/", icon: Home, label: "Asosiy" },
@@ -23,10 +25,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <DailyRewardModal />
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t md:relative md:border-t-0 md:border-r md:w-64 md:flex-col md:h-screen transition-all shadow-sm">
         <div className="p-4 hidden md:flex md:flex-col gap-2">
-          <Link href="/" className="flex items-center gap-2 text-2xl font-black text-primary hover-elevate p-2 rounded-xl">
-            <div className="bg-primary text-primary-foreground w-9 h-9 flex items-center justify-center rounded-xl font-black text-lg">W</div>
-            Wordbox
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2 text-2xl font-black text-primary hover-elevate p-2 rounded-xl">
+              <div className="bg-primary text-primary-foreground w-9 h-9 flex items-center justify-center rounded-xl font-black text-lg">W</div>
+              Wordbox
+            </Link>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+              title={theme === "dark" ? "Yorqin rejim" : "Qorong'u rejim"}
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
           {stats && (
             <div className="flex items-center gap-3 px-2 py-1">
               <div className="flex items-center gap-1 text-sm font-bold text-orange-500">
@@ -52,7 +63,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Link key={item.href} href={item.href} className="flex-1 md:flex-none">
                 <div
                   className={cn(
-                    "flex flex-col md:flex-row items-center gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 font-bold text-sm md:text-base",
+                    "relative flex flex-col md:flex-row items-center gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 font-bold text-sm md:text-base active:scale-95",
                     isActive
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -60,6 +71,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 >
                   <item.icon className={cn("w-5 h-5", isActive ? "stroke-[2.5px]" : "")} />
                   <span className="text-[10px] md:text-sm">{item.label}</span>
+                  {isActive && (
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 md:hidden w-1 h-1 rounded-full bg-primary" />
+                  )}
                 </div>
               </Link>
             );

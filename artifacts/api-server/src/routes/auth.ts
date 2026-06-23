@@ -286,4 +286,27 @@ router.patch("/profile/password", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+const subscriptionSchema = z.object({
+  tier: z.enum(["free", "premium", "pro"]),
+});
+
+router.post("/auth/subscription", requireAuth, async (req, res) => {
+  const parsed = subscriptionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Noto'g'ri tarif tanlandi" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ subscriptionTier: parsed.data.tier, updatedAt: new Date() })
+    .where(eq(usersTable.id, req.user!.id))
+    .returning();
+
+  res.json({
+    id: updated.id,
+    subscriptionTier: updated.subscriptionTier,
+  });
+});
+
 export default router;
