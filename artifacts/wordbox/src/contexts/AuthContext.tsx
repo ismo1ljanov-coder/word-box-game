@@ -6,6 +6,7 @@ export interface AuthUser {
   fullName: string;
   isAdmin: boolean;
   subscriptionTier: "free" | "premium" | "pro";
+  totalCoins: number;
 }
 
 interface AuthContextValue {

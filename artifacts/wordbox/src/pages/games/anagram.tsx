@@ -6,10 +6,13 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, RotateCcw, Shuffle, Delete, CheckCircle2 } from "lucide-react";
+import { Trophy, RotateCcw, Shuffle, Delete, CheckCircle2, Lightbulb, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as GameSessionLevel[];
+const HINT_COST = 10;
 
 function shuffleLetters(word: string): { letter: string; id: number }[] {
   const arr = word.toUpperCase().split("").map((l, i) => ({ letter: l, id: i }));
@@ -17,7 +20,6 @@ function shuffleLetters(word: string): { letter: string; id: number }[] {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  // ensure it's always different from original
   const original = word.toUpperCase().split("").map((l, i) => ({ letter: l, id: i }));
   if (arr.every((a, i) => a.id === original[i].id) && arr.length > 1) {
     [arr[0], arr[1]] = [arr[1], arr[0]];
@@ -26,15 +28,21 @@ function shuffleLetters(word: string): { letter: string; id: number }[] {
 }
 
 export default function AnagramGame() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+
   const [level, setLevel] = useState<GameSessionLevel>("A1");
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [availableLetters, setAvailableLetters] = useState<{ letter: string; id: number }[]>([]);
   const [selectedLetters, setSelectedLetters] = useState<{ letter: string; id: number }[]>([]);
   const [checkState, setCheckState] = useState<"idle" | "correct" | "wrong">("idle");
+  const [localCoins, setLocalCoins] = useState(user?.totalCoins ?? 0);
+  const [hintLetter, setHintLetter] = useState<number | null>(null); // id of hinted letter
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const correctRef = useRef(0);
 
   const { data: questions, isLoading, refetch } = useGetQuizWords(
     { level, count: 10 },
@@ -43,6 +51,10 @@ export default function AnagramGame() {
 
   const markProgress = useMarkWordProgress();
   const createSession = useCreateGameSession();
+
+  useEffect(() => {
+    setLocalCoins(user?.totalCoins ?? 0);
+  }, [user?.totalCoins]);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
@@ -54,6 +66,7 @@ export default function AnagramGame() {
     setAvailableLetters(shuffleLetters(word));
     setSelectedLetters([]);
     setCheckState("idle");
+    setHintLetter(null);
   }, []);
 
   useEffect(() => {
@@ -64,37 +77,55 @@ export default function AnagramGame() {
 
   const startGame = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    correctRef.current = 0;
     setIsPlaying(true);
     setCurrentIdx(0);
-    setCorrectCount(0);
     setIsFinished(false);
     setSelectedLetters([]);
     setCheckState("idle");
+    setHintLetter(null);
     refetch();
+  };
+
+  const advanceQuestion = (nextIdx: number, wasCorrect: boolean) => {
+    const newCorrect = correctRef.current + (wasCorrect ? 1 : 0);
+    correctRef.current = newCorrect;
+    if (nextIdx >= (questions?.length ?? 0)) {
+      const total = questions?.length ?? 0;
+      const score = total > 0 ? Math.round((newCorrect / total) * 100) : 0;
+      createSession.mutate({
+        data: { gameType: "anagram", level, score, totalQuestions: total, correctAnswers: newCorrect },
+      });
+      setIsFinished(true);
+    } else {
+      setCurrentIdx(nextIdx);
+    }
   };
 
   const handlePickLetter = (item: { letter: string; id: number }) => {
     if (checkState !== "idle") return;
+    const idx = currentIdx; // capture — avoid stale closure inside state setter
+
     setAvailableLetters(prev => prev.filter(l => l.id !== item.id));
     setSelectedLetters(prev => {
       const next = [...prev, item];
-      // auto-check when all letters placed
-      if (next.length === (questions?.[currentIdx]?.word.length ?? 0)) {
+      const wordLen = questions?.[idx]?.word.length ?? 0;
+      if (next.length === wordLen) {
         const formed = next.map(l => l.letter).join("").toUpperCase();
-        const correct = (questions?.[currentIdx]?.word ?? "").toUpperCase();
-        const isCorrect = formed === correct;
+        const correctWord = (questions?.[idx]?.word ?? "").toUpperCase();
+        const isCorrect = formed === correctWord;
         setCheckState(isCorrect ? "correct" : "wrong");
         if (!isCorrect) {
-          // restore all letters after short delay
           timerRef.current = setTimeout(() => {
-            setAvailableLetters(shuffleLetters(questions?.[currentIdx]?.word ?? ""));
+            setAvailableLetters(shuffleLetters(questions?.[idx]?.word ?? ""));
             setSelectedLetters([]);
             setCheckState("idle");
+            setHintLetter(null);
           }, 1200);
         } else {
-          markProgress.mutate({ wordId: questions![currentIdx].wordId, data: { correct: true, gameType: "spelling" } });
+          markProgress.mutate({ wordId: questions![idx].wordId, data: { correct: true, gameType: "anagram" } });
           timerRef.current = setTimeout(() => {
-            advanceQuestion(currentIdx + 1, true);
+            advanceQuestion(idx + 1, true);
           }, 900);
         }
       }
@@ -105,35 +136,65 @@ export default function AnagramGame() {
   const handleRemoveLetter = (item: { letter: string; id: number }) => {
     if (checkState !== "idle") return;
     setSelectedLetters(prev => {
-      const idx = prev.findLastIndex(l => l.id === item.id);
-      if (idx === -1) return prev;
-      return prev.filter((_, i) => i !== idx);
+      const i = prev.findLastIndex(l => l.id === item.id);
+      if (i === -1) return prev;
+      return prev.filter((_, j) => j !== i);
     });
     setAvailableLetters(prev => [...prev, item]);
   };
 
   const handleSkip = () => {
-    if (!questions) return;
-    markProgress.mutate({ wordId: questions[currentIdx].wordId, data: { correct: false, gameType: "spelling" } });
-    advanceQuestion(currentIdx + 1, false);
+    if (!questions || checkState !== "idle") return;
+    const idx = currentIdx;
+    markProgress.mutate({ wordId: questions[idx].wordId, data: { correct: false, gameType: "anagram" } });
+    advanceQuestion(idx + 1, false);
   };
 
-  const advanceQuestion = (nextIdx: number, wasCorrect: boolean) => {
-    const newCorrect = correctCount + (wasCorrect ? 1 : 0);
-    if (nextIdx >= (questions?.length ?? 0)) {
-      const score = Math.round((newCorrect / (questions?.length ?? 1)) * 100);
-      createSession.mutate({
-        data: { gameType: "spelling", level, score, totalQuestions: questions?.length ?? 0, correctAnswers: newCorrect },
+  const handleHint = async () => {
+    if (!questions || checkState !== "idle") return;
+    const question = questions[currentIdx];
+    if (!question) return;
+
+    if (localCoins < HINT_COST) {
+      toast({ title: "Tangalar yetarli emas", description: `Maslahat uchun ${HINT_COST} tanga kerak`, variant: "destructive" });
+      return;
+    }
+
+    const word = question.word.toUpperCase();
+    // Find the next letter position that needs to be filled (first missing or wrong position)
+    const hintPos = selectedLetters.length;
+    if (hintPos >= word.length) return;
+
+    const correctLetter = word[hintPos];
+    const letterItem = availableLetters.find(l => l.letter === correctLetter);
+    if (!letterItem) return;
+
+    try {
+      const res = await fetch("/api/auth/spend-coins", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: HINT_COST }),
       });
-      setCorrectCount(newCorrect);
-      setIsFinished(true);
-    } else {
-      setCorrectCount(newCorrect);
-      setCurrentIdx(nextIdx);
+      if (!res.ok) {
+        const data = await res.json();
+        toast({ title: data.error ?? "Xato", variant: "destructive" });
+        return;
+      }
+      const data = await res.json();
+      setLocalCoins(data.totalCoins);
+      setHintLetter(letterItem.id);
+      // Auto-place the hinted letter after a short delay
+      setTimeout(() => {
+        handlePickLetter(letterItem);
+        setHintLetter(null);
+      }, 400);
+    } catch {
+      toast({ title: "Server bilan aloqa yo'q", variant: "destructive" });
     }
   };
 
-  const progress = questions ? ((currentIdx) / questions.length) * 100 : 0;
+  const progress = questions ? (currentIdx / questions.length) * 100 : 0;
 
   if (!isPlaying) {
     return (
@@ -159,6 +220,7 @@ export default function AnagramGame() {
               <p>• O'zbek tarjimasi ko'rsatiladi</p>
               <p>• Aralashtirilgan harflarni bosib so'z tuzing</p>
               <p>• Noto'g'ri bo'lsa, harflar qayta aralashtiriladi</p>
+              <p>• 💡 Maslahat: {HINT_COST} 🪙 sarflab harf ochish mumkin</p>
             </div>
             <Button onClick={startGame} size="lg" className="w-full rounded-xl font-bold h-14 text-lg">
               Boshlash
@@ -170,19 +232,20 @@ export default function AnagramGame() {
   }
 
   if (isFinished) {
-    const score = Math.round((correctCount / (questions?.length ?? 1)) * 100);
+    const total = questions?.length ?? 1;
+    const score = Math.round((correctRef.current / total) * 100);
     return (
       <div className="max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Card className="rounded-3xl border-none overflow-hidden">
           <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-8 text-white text-center">
             <Trophy className="w-16 h-16 mx-auto mb-4 opacity-90" />
             <h2 className="text-3xl font-black">Barakalla!</h2>
-            <p className="text-white/80 mt-1">{correctCount}/{questions?.length} so'z to'g'ri</p>
+            <p className="text-white/80 mt-1">{correctRef.current}/{total} so'z to'g'ri</p>
           </div>
           <CardContent className="p-8">
             <div className="grid grid-cols-2 gap-4 text-center mb-6">
               <div><div className="text-4xl font-black text-primary">{score}%</div><div className="text-sm text-muted-foreground">Ball</div></div>
-              <div><div className="text-4xl font-black text-indigo-500">{correctCount}</div><div className="text-sm text-muted-foreground">To'g'ri</div></div>
+              <div><div className="text-4xl font-black text-indigo-500">{correctRef.current}</div><div className="text-sm text-muted-foreground">To'g'ri</div></div>
             </div>
             <div className="flex gap-3">
               <Button onClick={startGame} className="flex-1 rounded-xl font-bold" size="lg">
@@ -205,6 +268,7 @@ export default function AnagramGame() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setIsPlaying(false)}>
           <RotateCcw className="w-4 h-4" />
@@ -219,6 +283,13 @@ export default function AnagramGame() {
         <Badge className="bg-indigo-500/10 text-indigo-600 border-0 font-bold">{level}</Badge>
       </div>
 
+      {/* Coin indicator */}
+      <div className="flex justify-end">
+        <span className="flex items-center gap-1.5 text-sm font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-full">
+          <Coins className="w-4 h-4" /> {localCoins}
+        </span>
+      </div>
+
       <Card className="rounded-3xl border-border/50 shadow-sm">
         <CardContent className="p-8 space-y-8">
           <div className="text-center">
@@ -229,7 +300,12 @@ export default function AnagramGame() {
           {/* Answer area */}
           <div>
             <p className="text-xs font-bold text-muted-foreground mb-2 text-center">Sizning javobingiz:</p>
-            <div className="min-h-[56px] flex flex-wrap justify-center gap-2 p-3 rounded-2xl border-2 border-dashed border-border bg-muted/20">
+            <div className={cn(
+              "min-h-[56px] flex flex-wrap justify-center gap-2 p-3 rounded-2xl border-2 border-dashed transition-colors",
+              checkState === "correct" ? "border-emerald-500 bg-emerald-500/5" :
+              checkState === "wrong" ? "border-red-500 bg-red-500/5" :
+              "border-border bg-muted/20"
+            )}>
               {selectedLetters.map((item, i) => (
                 <button
                   key={`sel-${item.id}-${i}`}
@@ -240,19 +316,30 @@ export default function AnagramGame() {
                     "w-11 h-11 rounded-xl font-black text-lg border-2 transition-all focus:outline-none active:outline-none",
                     checkState === "correct" ? "bg-emerald-500 text-white border-emerald-500" :
                     checkState === "wrong" ? "bg-red-500 text-white border-red-500" :
+                    hintLetter === item.id ? "bg-amber-400 text-white border-amber-400 scale-110" :
                     "bg-background border-border hover:border-red-500/50 hover:bg-red-500/5"
                   )}
                 >
                   {item.letter || "?"}
                 </button>
               ))}
-              {checkState === "correct" && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-0" />
-                </div>
+              {selectedLetters.length === 0 && (
+                <span className="text-muted-foreground text-sm self-center">Harflarni tanlang...</span>
               )}
             </div>
           </div>
+
+          {/* Correct/wrong indicator */}
+          {checkState === "correct" && (
+            <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold animate-in fade-in zoom-in-95">
+              <CheckCircle2 className="w-5 h-5" /> To'g'ri!
+            </div>
+          )}
+          {checkState === "wrong" && (
+            <div className="text-center text-red-500 font-bold animate-in fade-in zoom-in-95 text-sm">
+              Noto'g'ri — qayta urining!
+            </div>
+          )}
 
           {/* Available letters */}
           <div>
@@ -264,7 +351,12 @@ export default function AnagramGame() {
                   onClick={() => handlePickLetter(item)}
                   onMouseDown={(e) => e.preventDefault()}
                   disabled={checkState !== "idle"}
-                  className="w-11 h-11 rounded-xl font-black text-lg bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-2 border-indigo-500/20 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all active:scale-95 focus:outline-none active:outline-none"
+                  className={cn(
+                    "w-11 h-11 rounded-xl font-black text-lg border-2 transition-all active:scale-95 focus:outline-none active:outline-none",
+                    hintLetter === item.id
+                      ? "bg-amber-400 text-white border-amber-400 scale-110 animate-pulse"
+                      : "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20 hover:bg-indigo-500 hover:text-white hover:border-indigo-500"
+                  )}
                 >
                   {item.letter || "?"}
                 </button>
@@ -282,13 +374,23 @@ export default function AnagramGame() {
           variant="outline"
           className="flex-1 rounded-xl font-bold"
           onClick={() => {
+            if (timerRef.current) clearTimeout(timerRef.current);
             setAvailableLetters(shuffleLetters(question.word));
             setSelectedLetters([]);
             setCheckState("idle");
+            setHintLetter(null);
           }}
           disabled={checkState !== "idle"}
         >
           <Delete className="mr-2 w-4 h-4" /> Tozalash
+        </Button>
+        <Button
+          variant="outline"
+          className="flex-1 rounded-xl font-bold text-amber-600 border-amber-500/30 hover:bg-amber-500/10"
+          onClick={handleHint}
+          disabled={checkState !== "idle" || localCoins < HINT_COST}
+        >
+          <Lightbulb className="mr-1.5 w-4 h-4" /> {HINT_COST}🪙
         </Button>
         <Button variant="ghost" className="flex-1 rounded-xl font-bold text-muted-foreground" onClick={handleSkip} disabled={checkState !== "idle"}>
           O'tkazish

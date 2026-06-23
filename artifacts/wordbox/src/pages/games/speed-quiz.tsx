@@ -22,17 +22,29 @@ export default function SpeedQuizGame() {
   const [answerState, setAnswerState] = useState<"idle" | "correct" | "wrong" | "timeout">("idle");
   const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION);
   const [isChecking, setIsChecking] = useState(false);
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const correctRef = useRef(0);
+  const levelRef = useRef(level);
+
+  const markProgressMutation = useMarkWordProgress();
+  const createSessionMutation = useCreateGameSession();
+  const markProgressRef = useRef(markProgressMutation.mutate);
+  const createSessionRef = useRef(createSessionMutation.mutate);
+  markProgressRef.current = markProgressMutation.mutate;
+  createSessionRef.current = createSessionMutation.mutate;
 
   const { data: questions, isLoading, refetch } = useGetQuizWords(
     { level, count: 10 },
     { query: { enabled: false, queryKey: getGetQuizWordsQueryKey({ level, count: 10 }) } }
   );
 
-  const markProgress = useMarkWordProgress();
-  const createSession = useCreateGameSession();
+  // questionsRef typed from the actual hook return — must be declared after the hook
+  const questionsRef = useRef<typeof questions>(undefined);
+
+  useEffect(() => { questionsRef.current = questions; }, [questions]);
+  useEffect(() => { levelRef.current = level; }, [level]);
 
   useEffect(() => {
     return () => {
@@ -46,11 +58,14 @@ export default function SpeedQuizGame() {
     if (countdownRef.current) clearInterval(countdownRef.current);
   }, []);
 
-  const advanceQuestion = useCallback((nextIdx: number, correct: number, total: number) => {
+  // Stable: reads only from refs, sets only state
+  const advanceQuestion = useCallback((nextIdx: number, correct: number) => {
+    const qs = questionsRef.current;
+    const total = qs?.length ?? 0;
     if (nextIdx >= total) {
-      const score = Math.round((correct / total) * 100);
-      createSession.mutate({
-        data: { gameType: "quiz", level, score, totalQuestions: total, correctAnswers: correct },
+      const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+      createSessionRef.current({
+        data: { gameType: "speed_quiz", level: levelRef.current, score, totalQuestions: total, correctAnswers: correct },
       });
       setCorrectCount(correct);
       setIsFinished(true);
@@ -61,46 +76,42 @@ export default function SpeedQuizGame() {
       setIsChecking(false);
       setTimeLeft(TIME_PER_QUESTION);
     }
-  }, [createSession, level]);
+  }, []); // intentionally empty — reads from stable refs only
 
-  const startCountdown = useCallback((idx: number, qs: typeof questions) => {
+  // Stable: depends only on clearTimers (stable) + advanceQuestion (stable)
+  const startCountdown = useCallback((idx: number) => {
     clearTimers();
     setTimeLeft(TIME_PER_QUESTION);
     countdownRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(countdownRef.current!);
-          // Time's up
           setAnswerState("timeout");
           setIsChecking(true);
-          const q = qs?.[idx];
-          if (q) markProgress.mutate({ wordId: q.wordId, data: { correct: false, gameType: "quiz" } });
+          const q = questionsRef.current?.[idx];
+          if (q) markProgressRef.current({ wordId: q.wordId, data: { correct: false, gameType: "speed_quiz" } });
           timerRef.current = setTimeout(() => {
-            advanceQuestion(idx + 1, correctRef.current, qs?.length ?? 0);
+            advanceQuestion(idx + 1, correctRef.current);
           }, 1000);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-  }, [clearTimers, markProgress, advanceQuestion]);
+  }, [clearTimers, advanceQuestion]);
 
   useEffect(() => {
     if (isPlaying && questions && questions.length > 0 && answerState === "idle" && !isFinished) {
-      startCountdown(currentIdx, questions);
+      startCountdown(currentIdx);
     }
   }, [isPlaying, questions, currentIdx, answerState, isFinished, startCountdown]);
 
-  useEffect(() => {
-    correctRef.current = correctCount;
-  }, [correctCount]);
-
   const startGame = () => {
     clearTimers();
+    correctRef.current = 0;
     setIsPlaying(true);
     setCurrentIdx(0);
     setCorrectCount(0);
-    correctRef.current = 0;
     setIsFinished(false);
     setSelectedAnswer(null);
     setAnswerState("idle");
@@ -118,14 +129,14 @@ export default function SpeedQuizGame() {
     const q = questions[currentIdx];
     const isCorrect = answer === q.correctAnswer;
     setAnswerState(isCorrect ? "correct" : "wrong");
-    const newCorrect = correctCount + (isCorrect ? 1 : 0);
+    const newCorrect = correctRef.current + (isCorrect ? 1 : 0);
     correctRef.current = newCorrect;
     if (isCorrect) setCorrectCount(newCorrect);
 
-    markProgress.mutate({ wordId: q.wordId, data: { correct: isCorrect, gameType: "quiz" } });
+    markProgressRef.current({ wordId: q.wordId, data: { correct: isCorrect, gameType: "speed_quiz" } });
 
     timerRef.current = setTimeout(() => {
-      advanceQuestion(currentIdx + 1, newCorrect, questions.length);
+      advanceQuestion(currentIdx + 1, newCorrect);
     }, 800);
   };
 
@@ -169,19 +180,19 @@ export default function SpeedQuizGame() {
   }
 
   if (isFinished) {
-    const score = Math.round((correctCount / (questions?.length ?? 1)) * 100);
+    const score = Math.round((correctRef.current / (questions?.length ?? 1)) * 100);
     return (
       <div className="max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Card className="rounded-3xl border-none overflow-hidden">
           <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-8 text-white text-center">
             <Trophy className="w-16 h-16 mx-auto mb-4 opacity-90" />
             <h2 className="text-3xl font-black">O'yin tugadi!</h2>
-            <p className="text-white/80 mt-1">{correctCount}/{questions?.length} to'g'ri javob</p>
+            <p className="text-white/80 mt-1">{correctRef.current}/{questions?.length} to'g'ri javob</p>
           </div>
           <CardContent className="p-8">
             <div className="grid grid-cols-2 gap-4 text-center mb-6">
               <div><div className="text-4xl font-black text-primary">{score}%</div><div className="text-sm text-muted-foreground">Ball</div></div>
-              <div><div className="text-4xl font-black text-yellow-500">{correctCount}</div><div className="text-sm text-muted-foreground">To'g'ri</div></div>
+              <div><div className="text-4xl font-black text-yellow-500">{correctRef.current}</div><div className="text-sm text-muted-foreground">To'g'ri</div></div>
             </div>
             <div className="flex gap-3">
               <Button onClick={startGame} className="flex-1 rounded-xl font-bold" size="lg">
@@ -209,7 +220,7 @@ export default function SpeedQuizGame() {
   return (
     <div className="max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setIsPlaying(false)}>
+        <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => { clearTimers(); setIsPlaying(false); }}>
           <RotateCcw className="w-4 h-4" />
         </Button>
         <div className="flex-1">
@@ -217,7 +228,7 @@ export default function SpeedQuizGame() {
             <span className="flex items-center gap-1.5"><Zap className="w-4 h-4 text-yellow-500" /> Tezkor test</span>
             <span>{currentIdx + 1} / {questions.length}</span>
           </div>
-          <Progress value={((currentIdx) / questions.length) * 100} className="h-2" />
+          <Progress value={(currentIdx / questions.length) * 100} className="h-2" />
         </div>
         <Badge className="bg-yellow-500/10 text-yellow-600 border-0 font-bold">{level}</Badge>
       </div>
@@ -233,7 +244,7 @@ export default function SpeedQuizGame() {
         </div>
         <div className="h-3 rounded-full bg-muted overflow-hidden">
           <div
-            className={cn("h-full rounded-full transition-all duration-1000", timerColor)}
+            className={cn("h-full rounded-full transition-all duration-1000 ease-linear", timerColor)}
             style={{ width: `${timerPercent}%` }}
           />
         </div>

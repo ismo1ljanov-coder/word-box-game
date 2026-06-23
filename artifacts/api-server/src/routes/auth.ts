@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import { db } from "@workspace/db";
 import { usersTable, passwordResetCodesTable } from "@workspace/db";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, sql } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "../lib/logger";
 import { requireAuth } from "../middleware/auth";
@@ -158,7 +158,31 @@ router.get("/auth/me", async (req, res) => {
     fullName: user.fullName,
     isAdmin: user.isAdmin,
     subscriptionTier: user.subscriptionTier,
+    totalCoins: user.totalCoins,
   });
+});
+
+router.post("/auth/spend-coins", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
+  const { amount } = req.body;
+  if (!amount || typeof amount !== "number" || amount <= 0 || !Number.isInteger(amount)) {
+    res.status(400).json({ error: "Miqdor noto'g'ri" });
+    return;
+  }
+  const [current] = await db
+    .select({ totalCoins: usersTable.totalCoins })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId));
+  if (!current || current.totalCoins < amount) {
+    res.status(400).json({ error: "Tangalar yetarli emas", totalCoins: current?.totalCoins ?? 0 });
+    return;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set({ totalCoins: sql`${usersTable.totalCoins} - ${amount}` })
+    .where(eq(usersTable.id, userId))
+    .returning({ totalCoins: usersTable.totalCoins });
+  res.json({ totalCoins: updated.totalCoins });
 });
 
 router.post("/auth/forgot-password", async (req, res) => {
