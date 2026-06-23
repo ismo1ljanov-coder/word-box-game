@@ -29,7 +29,7 @@ const FEATURES: PlanFeature[] = [
   { label: "Imlo o'yini", free: false, premium: true, pro: true },
   { label: "Anagram o'yini", free: false, premium: false, pro: true },
   { label: "Tezkor test (Speed Quiz)", free: false, premium: false, pro: true },
-  { label: "Sevimlilar va takrorlash", free: true, premium: true, pro: true },
+  { label: "Sevimlilar va takrorlash", free: false, premium: true, pro: true },
   { label: "Kengaytirilgan statistika", free: false, premium: true, pro: true },
   { label: "AI tavsiyalar (tez kunda)", free: false, premium: false, pro: true },
 ];

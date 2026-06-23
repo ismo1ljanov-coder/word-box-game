@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { wordsTable, wordProgressTable } from "@workspace/db";
 import { ListWordsQueryParams, GetWordParams, MarkWordProgressParams, MarkWordProgressBody, ToggleFavoriteParams } from "@workspace/api-zod";
-import { eq, and, ilike, sql, inArray } from "drizzle-orm";
+import { eq, and, ilike, sql, inArray, gte } from "drizzle-orm";
 import { requireAuth, TIER_LEVELS } from "../middleware/auth";
 import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
 import { logEvent } from "../middleware/analytics";
@@ -42,6 +42,14 @@ router.get("/words", requireAuth, async (req, res) => {
   if (category) conditions.push(eq(wordsTable.category, category));
   if (search) conditions.push(ilike(wordsTable.word, `%${search}%`));
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  if (favoritesOnly && userTier === "free") {
+    res.status(403).json({
+      error: "Sevimlilar faqat Premium foydalanuvchilar uchun mavjud",
+      requiredTier: "premium",
+    });
+    return;
+  }
 
   if (favoritesOnly) {
     const favorites = await db
@@ -126,6 +134,9 @@ router.get("/words", requireAuth, async (req, res) => {
 
 router.get("/words/:wordId", requireAuth, async (req, res) => {
   const userId = req.user!.id;
+  const userTier = req.user!.subscriptionTier;
+  const allowedLevels = TIER_LEVELS[userTier] ?? TIER_LEVELS.free;
+
   const parsed = GetWordParams.safeParse(req.params);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid params" });
@@ -156,6 +167,15 @@ router.get("/words/:wordId", requireAuth, async (req, res) => {
     res.status(404).json({ error: "Word not found" });
     return;
   }
+
+  if (!allowedLevels.includes(row.level)) {
+    res.status(403).json({
+      error: "Bu so'z sizning tarifingizda mavjud emas",
+      requiredTier: (["B1", "B2"] as string[]).includes(row.level) ? "premium" : "pro",
+    });
+    return;
+  }
+
   res.json({
     ...row,
     learned: row.learned ?? false,
@@ -167,6 +187,9 @@ router.get("/words/:wordId", requireAuth, async (req, res) => {
 
 router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
   const userId = req.user!.id;
+  const userTier = req.user!.subscriptionTier;
+  const allowedLevels = TIER_LEVELS[userTier] ?? TIER_LEVELS.free;
+
   const paramsParsed = MarkWordProgressParams.safeParse(req.params);
   const bodyParsed = MarkWordProgressBody.safeParse(req.body);
 
@@ -177,6 +200,23 @@ router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
 
   const { wordId } = paramsParsed.data;
   const { correct } = bodyParsed.data;
+
+  const [wordCheck] = await db
+    .select({ level: wordsTable.level })
+    .from(wordsTable)
+    .where(eq(wordsTable.id, wordId));
+
+  if (!wordCheck) {
+    res.status(404).json({ error: "So'z topilmadi" });
+    return;
+  }
+  if (!(allowedLevels as readonly string[]).includes(wordCheck.level)) {
+    res.status(403).json({
+      error: "Bu so'z sizning tarifingizda mavjud emas",
+      requiredTier: (["B1", "B2"] as string[]).includes(wordCheck.level) ? "premium" : "pro",
+    });
+    return;
+  }
 
   const [existing] = await db
     .select()
@@ -204,6 +244,27 @@ router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
       isFavorite: updated.isFavorite,
     };
   } else {
+    if (userTier === "free") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const [{ dailyCount }] = await db
+        .select({ dailyCount: sql<number>`count(*)::int` })
+        .from(wordProgressTable)
+        .where(and(
+          eq(wordProgressTable.userId, userId),
+          eq(wordProgressTable.practiceCount, 1),
+          gte(wordProgressTable.updatedAt, today)
+        ));
+      if (dailyCount >= 20) {
+        res.status(403).json({
+          error: "Bepul tarif uchun kunlik limit: 20 ta yangi so'z. Ertaga davom etishingiz yoki Premium olishingiz mumkin!",
+          requiredTier: "premium",
+          limitType: "daily_new_words",
+        });
+        return;
+      }
+    }
+
     const score = correct ? 10 : 0;
     const [created] = await db
       .insert(wordProgressTable)
@@ -230,6 +291,16 @@ router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
 
 router.post("/words/:wordId/favorite", requireAuth, async (req, res) => {
   const userId = req.user!.id;
+  const userTier = req.user!.subscriptionTier;
+
+  if (userTier === "free") {
+    res.status(403).json({
+      error: "Sevimlilar faqat Premium foydalanuvchilar uchun mavjud",
+      requiredTier: "premium",
+    });
+    return;
+  }
+
   const parsed = ToggleFavoriteParams.safeParse(req.params);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid params" });
