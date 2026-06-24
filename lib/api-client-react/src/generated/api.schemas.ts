@@ -597,6 +597,10 @@ limit?: number;
 export type GetQuizWordsParams = {
 level?: GetQuizWordsLevel;
 count?: number;
+/**
+ * review = pull from due words (spaced repetition); omit for random words by level
+ */
+mode?: GetQuizWordsMode;
 };
 
 export type GetQuizWordsLevel = typeof GetQuizWordsLevel[keyof typeof GetQuizWordsLevel];
@@ -609,6 +613,13 @@ export const GetQuizWordsLevel = {
   B2: 'B2',
   C1: 'C1',
   C2: 'C2',
+} as const;
+
+export type GetQuizWordsMode = typeof GetQuizWordsMode[keyof typeof GetQuizWordsMode];
+
+
+export const GetQuizWordsMode = {
+  review: 'review',
 } as const;
 
 export type GetCrosswordPuzzleParams = {

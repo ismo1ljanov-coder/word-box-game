@@ -382,7 +382,8 @@ export const getQuizWordsQueryCountDefault = 10;
 
 export const GetQuizWordsQueryParams = zod.object({
   "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).optional(),
-  "count": zod.coerce.number().default(getQuizWordsQueryCountDefault)
+  "count": zod.coerce.number().default(getQuizWordsQueryCountDefault),
+  "mode": zod.enum(['review']).optional().describe('review = pull from due words (spaced repetition); omit for random words by level')
 })
 
 export const GetQuizWordsResponseItem = zod.object({

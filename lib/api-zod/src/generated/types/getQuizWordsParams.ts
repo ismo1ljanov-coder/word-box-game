@@ -6,8 +6,13 @@
  * OpenAPI spec version: 0.4.0
  */
 import type { GetQuizWordsLevel } from './getQuizWordsLevel';
+import type { GetQuizWordsMode } from './getQuizWordsMode';
 
 export type GetQuizWordsParams = {
 level?: GetQuizWordsLevel;
 count?: number;
+/**
+ * review = pull from due words (spaced repetition); omit for random words by level
+ */
+mode?: GetQuizWordsMode;
 };

@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { wordsTable, gameSessionsTable } from "@workspace/db";
+import { wordsTable, gameSessionsTable, wordProgressTable } from "@workspace/db";
 import { GetCrosswordPuzzleQueryParams, GetQuizWordsQueryParams, CreateGameSessionBody } from "@workspace/api-zod";
-import { eq, sql, and, gte, inArray } from "drizzle-orm";
+import { eq, sql, and, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import { requireAuth, TIER_LEVELS, PRO_GAME_TYPES, PREMIUM_GAME_TYPES } from "../middleware/auth";
 import { recordActivity, awardXp, checkAndAwardAchievements } from "../lib/activity";
 import { logEvent } from "../middleware/analytics";
@@ -157,12 +157,14 @@ router.get("/games/quiz", requireAuth, async (req, res) => {
     return;
   }
 
+  const userId = req.user!.id;
   const userTier = req.user!.subscriptionTier;
   const allowedLevels = TIER_LEVELS[userTier] ?? TIER_LEVELS.free;
   const count = parsed.data.count ?? 10;
   const level = parsed.data.level;
+  const isReviewMode = parsed.data.mode === "review";
 
-  if (level && !allowedLevels.includes(level)) {
+  if (!isReviewMode && level && !allowedLevels.includes(level)) {
     res.status(403).json({
       error: "Bu daraja sizning tarifingizda mavjud emas",
       requiredTier: ["B1", "B2"].includes(level) ? "premium" : "pro",
@@ -170,14 +172,44 @@ router.get("/games/quiz", requireAuth, async (req, res) => {
     return;
   }
 
-  let wordsQuery = db.select().from(wordsTable).$dynamic();
-  if (level) {
-    wordsQuery = wordsQuery.where(eq(wordsTable.level, level));
-  } else {
-    wordsQuery = wordsQuery.where(inArray(wordsTable.level, allowedLevels));
-  }
+  let allWords: { id: number; word: string; translation: string }[];
 
-  const allWords = await wordsQuery.orderBy(sql`random()`).limit(count);
+  if (isReviewMode) {
+    const now = new Date();
+    allWords = await db
+      .select({ id: wordsTable.id, word: wordsTable.word, translation: wordsTable.translation })
+      .from(wordsTable)
+      .innerJoin(
+        wordProgressTable,
+        and(
+          eq(wordProgressTable.wordId, wordsTable.id),
+          eq(wordProgressTable.userId, userId)
+        )
+      )
+      .where(
+        and(
+          inArray(wordsTable.level, allowedLevels),
+          or(
+            isNull(wordProgressTable.nextReviewAt),
+            lte(wordProgressTable.nextReviewAt, now)
+          ),
+          gte(wordProgressTable.practiceCount, 1)
+        )
+      )
+      .orderBy(wordProgressTable.nextReviewAt)
+      .limit(count);
+  } else {
+    let wordsQuery = db
+      .select({ id: wordsTable.id, word: wordsTable.word, translation: wordsTable.translation })
+      .from(wordsTable)
+      .$dynamic();
+    if (level) {
+      wordsQuery = wordsQuery.where(eq(wordsTable.level, level));
+    } else {
+      wordsQuery = wordsQuery.where(inArray(wordsTable.level, allowedLevels));
+    }
+    allWords = await wordsQuery.orderBy(sql`random()`).limit(count);
+  }
 
   if (allWords.length === 0) {
     res.json([]);

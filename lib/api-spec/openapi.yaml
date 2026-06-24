@@ -465,6 +465,12 @@ paths:
           schema:
             type: integer
             default: 10
+        - name: mode
+          in: query
+          description: "review = pull from due words (spaced repetition); omit for random words by level"
+          schema:
+            type: string
+            enum: [review]
       responses:
         "200":
           description: Quiz questions

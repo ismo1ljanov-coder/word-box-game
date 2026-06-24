@@ -1,61 +1,62 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { useGetQuizWords, useMarkWordProgress, useCreateGameSession, getGetQuizWordsQueryKey, useGetDueWords, getGetDueWordsQueryKey } from "@workspace/api-client-react";
-import type { GameSessionLevel, QuizQuestion } from "@workspace/api-client-react";
+import { useState, useEffect, useRef } from "react";
+import { useGetQuizWords, useMarkWordProgress, useCreateGameSession, getGetQuizWordsQueryKey } from "@workspace/api-client-react";
+import type { GameSessionLevel } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trophy, RotateCcw, Brain, Check, X } from "lucide-react";
+import { Trophy, RotateCcw, Brain, Check, X, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSearch } from "wouter";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as GameSessionLevel[];
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+type QuizMode = "level" | "review";
 
 export default function QuizGame() {
   const searchStr = useSearch();
   const params = new URLSearchParams(searchStr);
-  const isReviewMode = params.get("mode") === "review";
+  const urlReviewMode = params.get("mode") === "review";
 
+  const [quizMode, setQuizMode] = useState<QuizMode>(urlReviewMode ? "review" : "level");
   const [level, setLevel] = useState<GameSessionLevel>("A1");
-  const [isPlaying, setIsPlaying] = useState(isReviewMode);
+  const [isPlaying, setIsPlaying] = useState(urlReviewMode);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isFinished, setIsFinished] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data: quizQuestions, isLoading: isQuizLoading, isError: isQuizError, refetch: refetchQuiz } = useGetQuizWords(
+  const isReviewMode = quizMode === "review";
+
+  const {
+    data: levelQuestions,
+    isLoading: isLevelLoading,
+    isError: isLevelError,
+    refetch: refetchLevel,
+  } = useGetQuizWords(
     { level, count: 10 },
     { query: { enabled: false, queryKey: getGetQuizWordsQueryKey({ level, count: 10 }) } }
   );
 
-  const { data: dueData, isLoading: isDueLoading, isError: isDueError, refetch: refetchDue } = useGetDueWords(
-    { limit: 40 },
-    { query: { enabled: isReviewMode, queryKey: getGetDueWordsQueryKey({ limit: 40 }) } }
+  const {
+    data: reviewQuestions,
+    isLoading: isReviewLoading,
+    isError: isReviewError,
+    refetch: refetchReview,
+  } = useGetQuizWords(
+    { mode: "review", count: 10 },
+    { query: { enabled: false, queryKey: getGetQuizWordsQueryKey({ mode: "review", count: 10 }) } }
   );
 
-  const reviewQuestions = useMemo<QuizQuestion[]>(() => {
-    if (!dueData?.items || dueData.items.length === 0) return [];
-    const items = dueData.items;
-    const allTranslations = items.map(w => w.translation);
-    return items.slice(0, 10).map(w => {
-      const distractors = shuffle(allTranslations.filter(t => t !== w.translation)).slice(0, 3);
-      const options = shuffle([w.translation, ...distractors]);
-      return { wordId: w.id, word: w.word, correctAnswer: w.translation, options };
-    });
-  }, [dueData]);
+  useEffect(() => {
+    if (urlReviewMode) {
+      refetchReview();
+    }
+  }, []);
 
-  const questions = isReviewMode ? reviewQuestions : quizQuestions;
-  const isLoading = isReviewMode ? isDueLoading : isQuizLoading;
-  const isError = isReviewMode ? isDueError : isQuizError;
+  const questions = isReviewMode ? reviewQuestions : levelQuestions;
+  const isLoading = isReviewMode ? isReviewLoading : isLevelLoading;
+  const isError = isReviewMode ? isReviewError : isLevelError;
 
   const markProgress = useMarkWordProgress();
   const createSession = useCreateGameSession();
@@ -64,17 +65,19 @@ export default function QuizGame() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
-  const startGame = () => {
+  const startGame = (mode?: QuizMode) => {
+    const nextMode = mode ?? quizMode;
     if (timerRef.current) clearTimeout(timerRef.current);
+    setQuizMode(nextMode);
     setIsPlaying(true);
     setCurrentIdx(0);
     setScore(0);
     setSelectedAnswer(null);
     setIsFinished(false);
-    if (isReviewMode) {
-      refetchDue();
+    if (nextMode === "review") {
+      refetchReview();
     } else {
-      refetchQuiz();
+      refetchLevel();
     }
   };
 
@@ -97,7 +100,8 @@ export default function QuizGame() {
         setIsFinished(true);
         createSession.mutate({
           data: {
-            gameType: "quiz", level: isReviewMode ? "A1" : level,
+            gameType: "quiz",
+            level: isReviewMode ? "A1" : level,
             score: Math.round((newScore / questions.length) * 100),
             totalQuestions: questions.length,
             correctAnswers: newScore,
@@ -127,8 +131,28 @@ export default function QuizGame() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={startGame} size="lg" className="w-full h-14 rounded-xl text-lg font-black bg-blue-500 hover:bg-blue-600 text-white" data-testid="button-start">
+          <Button
+            onClick={() => startGame("level")}
+            size="lg"
+            className="w-full h-14 rounded-xl text-lg font-black bg-blue-500 hover:bg-blue-600 text-white"
+            data-testid="button-start"
+          >
             Boshlash
+          </Button>
+          <div className="relative flex items-center gap-3">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">yoki</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <Button
+            onClick={() => startGame("review")}
+            size="lg"
+            variant="outline"
+            className="w-full h-14 rounded-xl text-lg font-black border-2 border-amber-400/60 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+            data-testid="button-start-review"
+          >
+            <BookOpen className="mr-2 w-5 h-5" />
+            Takrorlash testi
           </Button>
         </div>
       </div>
@@ -143,7 +167,7 @@ export default function QuizGame() {
     return (
       <div className="max-w-md mx-auto mt-20 text-center space-y-4">
         <p className="text-xl text-red-500 font-bold">Xato yuz berdi. Qayta urinib ko'ring.</p>
-        <Button onClick={startGame} className="rounded-xl">Qayta</Button>
+        <Button onClick={() => startGame()} className="rounded-xl">Qayta</Button>
       </div>
     );
   }
@@ -156,7 +180,7 @@ export default function QuizGame() {
         </div>
         <h2 className="text-3xl font-black">Ajoyib!</h2>
         <p className="text-lg text-muted-foreground">Bugun takrorlanadigan so'zlar yo'q. Ertaga qaytib keling!</p>
-        <Button onClick={() => window.history.back()} className="rounded-xl h-12 px-8 font-bold">Orqaga</Button>
+        <Button onClick={() => setIsPlaying(false)} className="rounded-xl h-12 px-8 font-bold">Orqaga</Button>
       </div>
     );
   }
@@ -176,7 +200,7 @@ export default function QuizGame() {
           </p>
           <div className="flex gap-4">
             <Button onClick={() => setIsPlaying(false)} variant="outline" className="flex-1 h-14 rounded-xl font-bold">Chiqish</Button>
-            <Button onClick={startGame} className="flex-1 h-14 rounded-xl font-bold bg-blue-500 hover:bg-blue-600 text-white">
+            <Button onClick={() => startGame()} className="flex-1 h-14 rounded-xl font-bold bg-blue-500 hover:bg-blue-600 text-white">
               <RotateCcw className="mr-2 w-5 h-5" /> Qayta
             </Button>
           </div>
@@ -195,8 +219,8 @@ export default function QuizGame() {
     <div className="max-w-2xl mx-auto space-y-8 mt-10">
       {isReviewMode && (
         <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2">
-          <Brain className="w-4 h-4 text-amber-500 shrink-0" />
-          <span className="text-sm font-bold text-amber-700 dark:text-amber-400">Takrorlash rejimi — {questions.length} ta so'z</span>
+          <BookOpen className="w-4 h-4 text-amber-500 shrink-0" />
+          <span className="text-sm font-bold text-amber-700 dark:text-amber-400">Takrorlash testi — {questions.length} ta so'z</span>
         </div>
       )}
       <div className="flex items-center gap-4">

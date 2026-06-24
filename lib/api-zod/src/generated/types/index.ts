@@ -60,6 +60,7 @@ export * from './getCrosswordPuzzleLevel';
 export * from './getCrosswordPuzzleParams';
 export * from './getDueWordsParams';
 export * from './getQuizWordsLevel';
+export * from './getQuizWordsMode';
 export * from './getQuizWordsParams';
 export * from './getReviewScheduleParams';
 export * from './grantAdminUserPremium200';
