@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNotifications } from "@/context/NotificationContext";
 import { useColors } from "@/hooks/useColors";
 import { apiGet, apiPost } from "@/lib/api";
 
@@ -125,6 +126,7 @@ const optStyles = StyleSheet.create({
 export default function QuizScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { markPracticedToday } = useNotifications();
 
   const [state, setState] = useState<QuizState>("start");
   const [selectedLevel, setSelectedLevel] = useState<Level>("A1");
@@ -189,6 +191,7 @@ export default function QuizScreen() {
           level: selectedLevel,
         });
       } catch {}
+      markPracticedToday().catch(() => {});
       setState("result");
     } else {
       setCurrentIdx((i) => i + 1);

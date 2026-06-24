@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -8,12 +8,14 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 import { useColors } from "@/hooks/useColors";
 import { apiGet } from "@/lib/api";
 
@@ -82,6 +84,8 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
+  const { prefs, setEnabled, setTime } = useNotifications();
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery<StatsSummary>({
     queryKey: ["profile-stats"],
@@ -158,6 +162,27 @@ export default function ProfileScreen() {
     achievementTitle: { fontSize: 13, fontWeight: "700" as const, fontFamily: "Nunito_700Bold" },
     achievementDesc: { fontSize: 11, fontFamily: "Nunito_400Regular", lineHeight: 14 },
     achievementXp: { fontSize: 11, fontFamily: "Nunito_600SemiBold" },
+    notifCard: {
+      borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 24, gap: 12,
+    },
+    notifRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    notifLabel: { fontSize: 15, fontWeight: "700" as const, fontFamily: "Nunito_700Bold" },
+    notifSub: { fontSize: 12, fontFamily: "Nunito_400Regular", marginTop: 2 },
+    timeRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    timeBtn: {
+      flexDirection: "row", alignItems: "center", gap: 6,
+      paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1,
+    },
+    timeBtnText: { fontSize: 14, fontWeight: "700" as const, fontFamily: "Nunito_700Bold" },
+    timePicker: { gap: 12 },
+    timePickerLabel: { fontSize: 13, fontFamily: "Nunito_600SemiBold", textAlign: "center" },
+    timeUnit: { alignItems: "center", gap: 4 },
+    timeUnitLabel: { fontSize: 11, fontFamily: "Nunito_600SemiBold" },
+    timeValue: { fontSize: 28, fontWeight: "800" as const, fontFamily: "Nunito_800ExtraBold" },
+    stepBtn: {
+      width: 36, height: 36, borderRadius: 10, borderWidth: 1,
+      alignItems: "center", justifyContent: "center",
+    },
     logoutBtn: {
       height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center",
       flexDirection: "row", gap: 10, borderWidth: 1.5, marginTop: 8,
@@ -248,6 +273,111 @@ export default function ProfileScreen() {
           </View>
         </>
       )}
+
+      <Text style={s.sectionTitle}>Sozlamalar</Text>
+      <View style={[s.notifCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={s.notifRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.notifLabel, { color: colors.foreground }]}>Kunlik eslatma</Text>
+            <Text style={[s.notifSub, { color: colors.mutedForeground }]}>
+              {prefs.enabled
+                ? `Har kuni ${String(prefs.hour).padStart(2, "0")}:${String(prefs.minute).padStart(2, "0")} da eslatma keladi`
+                : "Mashq qilishni unutmaslik uchun yoqing"}
+            </Text>
+          </View>
+          <Switch
+            value={prefs.enabled}
+            onValueChange={async (val) => {
+              await Haptics.selectionAsync();
+              await setEnabled(val);
+              if (!val) setShowTimePicker(false);
+            }}
+            trackColor={{ false: colors.muted, true: colors.primary + "80" }}
+            thumbColor={prefs.enabled ? colors.primary : colors.mutedForeground}
+            testID="notification-toggle"
+          />
+        </View>
+
+        {prefs.enabled && (
+          <>
+            <View style={s.timeRow}>
+              <Ionicons name="time-outline" size={16} color={colors.mutedForeground} />
+              <Pressable
+                style={[s.timeBtn, { borderColor: colors.border, backgroundColor: colors.muted }]}
+                onPress={() => setShowTimePicker((v) => !v)}
+              >
+                <Text style={[s.timeBtnText, { color: colors.foreground }]}>
+                  {String(prefs.hour).padStart(2, "0")}:{String(prefs.minute).padStart(2, "0")}
+                </Text>
+                <Ionicons
+                  name={showTimePicker ? "chevron-up" : "chevron-down"}
+                  size={14}
+                  color={colors.mutedForeground}
+                />
+              </Pressable>
+            </View>
+
+            {showTimePicker && (
+              <View style={s.timePicker}>
+                <Text style={[s.timePickerLabel, { color: colors.mutedForeground }]}>
+                  Eslatma vaqtini tanlang
+                </Text>
+                <View style={{ flexDirection: "row", justifyContent: "center", gap: 32 }}>
+                  <View style={s.timeUnit}>
+                    <Text style={[s.timeUnitLabel, { color: colors.mutedForeground }]}>Soat</Text>
+                    <Pressable
+                      style={[s.stepBtn, { borderColor: colors.border }]}
+                      onPress={async () => {
+                        const next = (prefs.hour + 1) % 24;
+                        await setTime(next, prefs.minute);
+                      }}
+                    >
+                      <Ionicons name="chevron-up" size={18} color={colors.foreground} />
+                    </Pressable>
+                    <Text style={[s.timeValue, { color: colors.foreground }]}>
+                      {String(prefs.hour).padStart(2, "0")}
+                    </Text>
+                    <Pressable
+                      style={[s.stepBtn, { borderColor: colors.border }]}
+                      onPress={async () => {
+                        const next = (prefs.hour + 23) % 24;
+                        await setTime(next, prefs.minute);
+                      }}
+                    >
+                      <Ionicons name="chevron-down" size={18} color={colors.foreground} />
+                    </Pressable>
+                  </View>
+
+                  <View style={s.timeUnit}>
+                    <Text style={[s.timeUnitLabel, { color: colors.mutedForeground }]}>Daqiqa</Text>
+                    <Pressable
+                      style={[s.stepBtn, { borderColor: colors.border }]}
+                      onPress={async () => {
+                        const next = (prefs.minute + 5) % 60;
+                        await setTime(prefs.hour, next);
+                      }}
+                    >
+                      <Ionicons name="chevron-up" size={18} color={colors.foreground} />
+                    </Pressable>
+                    <Text style={[s.timeValue, { color: colors.foreground }]}>
+                      {String(prefs.minute).padStart(2, "0")}
+                    </Text>
+                    <Pressable
+                      style={[s.stepBtn, { borderColor: colors.border }]}
+                      onPress={async () => {
+                        const next = (prefs.minute + 55) % 60;
+                        await setTime(prefs.hour, next);
+                      }}
+                    >
+                      <Ionicons name="chevron-down" size={18} color={colors.foreground} />
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            )}
+          </>
+        )}
+      </View>
 
       <Pressable
         style={({ pressed }) => [
