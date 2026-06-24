@@ -290,6 +290,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/WordProgress"
 
+  /words/due:
+    get:
+      operationId: getDueWords
+      tags: [words]
+      summary: Get words due for spaced repetition review today
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Words due for review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DueWordsResponse"
+
   /words/{wordId}/favorite:
     post:
       operationId: toggleFavorite
@@ -1050,6 +1069,20 @@ components:
           description: 0-100 mastery score
         isFavorite:
           type: boolean
+        nextReviewAt:
+          type: ["string", "null"]
+          description: ISO timestamp when this word is next due for spaced repetition review
+
+    DueWordsResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WordWithProgress"
+        total:
+          type: integer
 
     ProgressInput:
       type: object

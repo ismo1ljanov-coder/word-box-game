@@ -1,9 +1,9 @@
-import { useGetStatsSummary, useGetLevelStats } from "@workspace/api-client-react";
+import { useGetStatsSummary, useGetLevelStats, useGetDueWords } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
-import { Trophy, Flame, Target, BookOpen, ArrowRight, Star, Zap, Heart, Crown, Swords } from "lucide-react";
+import { Trophy, Flame, Target, BookOpen, ArrowRight, Star, Zap, Heart, Brain, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -19,6 +19,8 @@ const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }>
 export default function Dashboard() {
   const { data: stats, isLoading: isStatsLoading } = useGetStatsSummary();
   const { data: levelStats, isLoading: isLevelsLoading } = useGetLevelStats();
+  const { data: dueData, isLoading: isDueLoading } = useGetDueWords({ limit: 1 });
+  const dueCount = dueData?.total ?? 0;
 
   const dailyProgress = stats
     ? Math.round(((stats.dailyGoalCompleted ?? 0) / (stats.dailyGoalTarget ?? 20)) * 100)
@@ -134,7 +136,7 @@ export default function Dashboard() {
         </Card>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="rounded-2xl border-border/50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -183,6 +185,31 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        <Link href="/games/flashcard?mode=review">
+          <Card className={`rounded-2xl border-2 cursor-pointer hover-elevate transition-all ${dueCount > 0 ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-orange-500/5" : "border-border/50"}`}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Brain className={`w-5 h-5 ${dueCount > 0 ? "text-amber-500" : "text-muted-foreground"}`} />
+                Bugun takrorlash
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isDueLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="flex items-end gap-3">
+                  <div className={`text-4xl font-black ${dueCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
+                    {dueCount}
+                  </div>
+                  <div className="text-sm text-muted-foreground mb-1">
+                    {dueCount === 0 ? "so'z tayyor" : "ta so'z kutmoqda"}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
       </section>
 
       <section>

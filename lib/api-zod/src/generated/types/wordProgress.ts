@@ -13,4 +13,9 @@ export interface WordProgress {
   /** 0-100 mastery score */
   score: number;
   isFavorite: boolean;
+  /**
+     * ISO timestamp when this word is next due for spaced repetition review
+     * @nullable
+     */
+  nextReviewAt?: string | null;
 }

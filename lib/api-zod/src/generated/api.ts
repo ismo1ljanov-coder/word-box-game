@@ -200,7 +200,38 @@ export const MarkWordProgressResponse = zod.object({
   "learned": zod.boolean(),
   "practiceCount": zod.number(),
   "score": zod.number().describe('0-100 mastery score'),
-  "isFavorite": zod.boolean()
+  "isFavorite": zod.boolean(),
+  "nextReviewAt": zod.string().nullish().describe('ISO timestamp when this word is next due for spaced repetition review')
+})
+
+
+/**
+ * @summary Get words due for spaced repetition review today
+ */
+export const getDueWordsQueryLimitDefault = 20;
+
+export const GetDueWordsQueryParams = zod.object({
+  "limit": zod.coerce.number().default(getDueWordsQueryLimitDefault)
+})
+
+export const GetDueWordsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "word": zod.string(),
+  "translation": zod.string().describe('Uzbek translation'),
+  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
+  "category": zod.string(),
+  "partOfSpeech": zod.string().nullish(),
+  "exampleSentence": zod.string().nullish(),
+  "exampleTranslation": zod.string().nullish(),
+  "phonetic": zod.string().nullish()
+}).and(zod.object({
+  "learned": zod.boolean().optional(),
+  "practiceCount": zod.number().optional(),
+  "score": zod.number().optional(),
+  "isFavorite": zod.boolean().optional()
+}))),
+  "total": zod.number()
 })
 
 
@@ -225,7 +256,8 @@ export const GetUserProgressResponseItem = zod.object({
   "learned": zod.boolean(),
   "practiceCount": zod.number(),
   "score": zod.number().describe('0-100 mastery score'),
-  "isFavorite": zod.boolean()
+  "isFavorite": zod.boolean(),
+  "nextReviewAt": zod.string().nullish().describe('ISO timestamp when this word is next due for spaced repetition review')
 })
 export const GetUserProgressResponse = zod.array(GetUserProgressResponseItem)
 

@@ -1,17 +1,28 @@
 import { useState, useRef, useEffect } from "react";
-import { useGetQuizWords, useMarkWordProgress, useCreateGameSession, getGetQuizWordsQueryKey } from "@workspace/api-client-react";
-import type { GameSessionLevel } from "@workspace/api-client-react";
+import { useGetQuizWords, useMarkWordProgress, useCreateGameSession, getGetQuizWordsQueryKey, useGetDueWords, getGetDueWordsQueryKey } from "@workspace/api-client-react";
+import type { GameSessionLevel, WordWithProgress } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trophy, ArrowRight, ArrowLeft, RotateCcw, X, Layers } from "lucide-react";
+import { Trophy, ArrowRight, ArrowLeft, RotateCcw, X, Layers, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSearch } from "wouter";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as GameSessionLevel[];
 
+type FlashCard = { wordId: number; word: string; correctAnswer: string; level?: string };
+
+function wordWithProgressToCard(w: WordWithProgress): FlashCard {
+  return { wordId: w.id, word: w.word, correctAnswer: w.translation, level: w.level };
+}
+
 export default function FlashcardGame() {
+  const searchStr = useSearch();
+  const params = new URLSearchParams(searchStr);
+  const isReviewMode = params.get("mode") === "review";
+
   const [level, setLevel] = useState<GameSessionLevel>("A1");
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(isReviewMode);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -19,10 +30,20 @@ export default function FlashcardGame() {
   const [markedLearned, setMarkedLearned] = useState<Set<number>>(new Set());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data: words, isLoading, isError, refetch } = useGetQuizWords(
+  const { data: quizWords, isLoading: isQuizLoading, isError: isQuizError, refetch: refetchQuiz } = useGetQuizWords(
     { level, count: 15 },
     { query: { enabled: false, queryKey: getGetQuizWordsQueryKey({ level, count: 15 }) } }
   );
+
+  const { data: dueData, isLoading: isDueLoading, isError: isDueError, refetch: refetchDue } = useGetDueWords(
+    { limit: 20 },
+    { query: { enabled: isReviewMode, queryKey: getGetDueWordsQueryKey({ limit: 20 }) } }
+  );
+
+  const dueCards: FlashCard[] | undefined = dueData?.items?.map(wordWithProgressToCard);
+  const words: FlashCard[] | undefined = isReviewMode ? dueCards : quizWords;
+  const isLoading = isReviewMode ? isDueLoading : isQuizLoading;
+  const isError = isReviewMode ? isDueError : isQuizError;
 
   const markProgress = useMarkWordProgress();
   const createSession = useCreateGameSession();
@@ -39,7 +60,11 @@ export default function FlashcardGame() {
     setIsAnimating(false);
     setIsFinished(false);
     setMarkedLearned(new Set());
-    refetch();
+    if (isReviewMode) {
+      refetchDue();
+    } else {
+      refetchQuiz();
+    }
   };
 
   const flipToNext = (nextIdx: number | null) => {
@@ -77,6 +102,13 @@ export default function FlashcardGame() {
     nextCard();
   };
 
+  const markForgotten = () => {
+    if (!words || isAnimating) return;
+    const word = words[currentIdx];
+    markProgress.mutate({ wordId: word.wordId, data: { correct: false, gameType: "flashcard" } });
+    nextCard();
+  };
+
   const finishGame = () => {
     if (!words) return;
     setIsFinished(true);
@@ -84,7 +116,7 @@ export default function FlashcardGame() {
     const finalScore = words.length > 0 ? Math.round((learnedCount / words.length) * 100) : 0;
     createSession.mutate({
       data: {
-        gameType: "flashcard", level,
+        gameType: "flashcard", level: isReviewMode ? "A1" : level,
         score: finalScore,
         totalQuestions: words.length,
         correctAnswers: learnedCount,
@@ -133,6 +165,19 @@ export default function FlashcardGame() {
     );
   }
 
+  if (words.length === 0 && isReviewMode) {
+    return (
+      <div className="max-w-md mx-auto mt-20 text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
+        <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
+          <Brain className="w-12 h-12 text-green-500" />
+        </div>
+        <h2 className="text-3xl font-black">Ajoyib!</h2>
+        <p className="text-lg text-muted-foreground">Bugun takrorlanadigan so'zlar yo'q. Ertaga qaytib keling!</p>
+        <Button onClick={() => window.history.back()} className="rounded-xl h-12 px-8 font-bold">Orqaga</Button>
+      </div>
+    );
+  }
+
   if (isFinished) {
     const learnedCount = markedLearned.size;
     return (
@@ -162,6 +207,12 @@ export default function FlashcardGame() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6 mt-10">
+      {isReviewMode && (
+        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2">
+          <Brain className="w-4 h-4 text-amber-500 shrink-0" />
+          <span className="text-sm font-bold text-amber-700 dark:text-amber-400">Takrorlash rejimi — {words.length} ta so'z</span>
+        </div>
+      )}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" className="rounded-full shrink-0" onClick={() => { if (timerRef.current) clearTimeout(timerRef.current); setIsPlaying(false); }}>
           <X className="w-5 h-5" />
@@ -201,9 +252,20 @@ export default function FlashcardGame() {
         <Button variant="outline" size="lg" className="rounded-xl font-bold h-14 px-6 border-2" onClick={prevCard} disabled={currentIdx === 0 || isAnimating}>
           <ArrowLeft className="mr-2 w-5 h-5" /> Oldingi
         </Button>
-        <Button variant="outline" size="lg" className="rounded-xl font-bold h-14 bg-green-500 hover:bg-green-600 text-white border-0 px-6" onClick={markLearned} disabled={isAnimating} data-testid="button-learned">
-          O'rgandim
-        </Button>
+        {isReviewMode ? (
+          <>
+            <Button variant="outline" size="lg" className="rounded-xl font-bold h-14 bg-red-500 hover:bg-red-600 text-white border-0 px-4" onClick={markForgotten} disabled={isAnimating} data-testid="button-forgotten">
+              Unutdim
+            </Button>
+            <Button variant="outline" size="lg" className="rounded-xl font-bold h-14 bg-green-500 hover:bg-green-600 text-white border-0 px-4" onClick={markLearned} disabled={isAnimating} data-testid="button-learned">
+              Bildim
+            </Button>
+          </>
+        ) : (
+          <Button variant="outline" size="lg" className="rounded-xl font-bold h-14 bg-green-500 hover:bg-green-600 text-white border-0 px-6" onClick={markLearned} disabled={isAnimating} data-testid="button-learned">
+            O'rgandim
+          </Button>
+        )}
         <Button size="lg" className="rounded-xl font-bold h-14 px-6" onClick={nextCard} disabled={isAnimating} data-testid="button-next">
           Keyingi <ArrowRight className="ml-2 w-5 h-5" />
         </Button>

@@ -43,12 +43,14 @@ import type {
   DailyRewardResult,
   DailyRewardStatusResult,
   DeleteAdminUser200,
+  DueWordsResponse,
   FavoriteToggleResult,
   ForgotPasswordInput,
   ForgotPasswordResult,
   GameSession,
   GameSessionInput,
   GetCrosswordPuzzleParams,
+  GetDueWordsParams,
   GetQuizWordsParams,
   GrantAdminUserPremium200,
   HealthStatus,
@@ -968,6 +970,90 @@ export const useMarkWordProgress = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getMarkWordProgressMutationOptions(options));
     }
+
+export const getGetDueWordsUrl = (params?: GetDueWordsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/words/due?${stringifiedParams}` : `/api/words/due`
+}
+
+/**
+ * @summary Get words due for spaced repetition review today
+ */
+export const getDueWords = async (params?: GetDueWordsParams, options?: RequestInit): Promise<DueWordsResponse> => {
+
+  return customFetch<DueWordsResponse>(getGetDueWordsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDueWordsQueryKey = (params?: GetDueWordsParams,) => {
+    return [
+    `/api/words/due`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDueWordsQueryOptions = <TData = Awaited<ReturnType<typeof getDueWords>>, TError = ErrorType<unknown>>(params?: GetDueWordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDueWords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDueWordsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDueWords>>> = ({ signal }) => getDueWords(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDueWords>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDueWordsQueryResult = NonNullable<Awaited<ReturnType<typeof getDueWords>>>
+export type GetDueWordsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get words due for spaced repetition review today
+ */
+
+export function useGetDueWords<TData = Awaited<ReturnType<typeof getDueWords>>, TError = ErrorType<unknown>>(
+ params?: GetDueWordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDueWords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDueWordsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getToggleFavoriteUrl = (wordId: number,) => {
 

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, pgEnum, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, pgEnum, unique, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -28,6 +28,10 @@ export const wordProgressTable = pgTable("word_progress", {
   practiceCount: integer("practice_count").notNull().default(0),
   score: integer("score").notNull().default(0),
   isFavorite: boolean("is_favorite").notNull().default(false),
+  sm2EaseFactor: real("sm2_ease_factor").notNull().default(2.5),
+  sm2Interval: integer("sm2_interval").notNull().default(1),
+  sm2Repetitions: integer("sm2_repetitions").notNull().default(0),
+  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

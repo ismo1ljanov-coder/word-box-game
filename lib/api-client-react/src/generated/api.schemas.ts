@@ -134,6 +134,16 @@ export interface WordProgress {
   /** 0-100 mastery score */
   score: number;
   isFavorite: boolean;
+  /**
+     * ISO timestamp when this word is next due for spaced repetition review
+     * @nullable
+     */
+  nextReviewAt?: string | null;
+}
+
+export interface DueWordsResponse {
+  items: WordWithProgress[];
+  total: number;
 }
 
 export interface ProgressInput {
@@ -558,6 +568,10 @@ export const ListWordsLevel = {
   C1: 'C1',
   C2: 'C2',
 } as const;
+
+export type GetDueWordsParams = {
+limit?: number;
+};
 
 export type GetQuizWordsParams = {
 level?: GetQuizWordsLevel;

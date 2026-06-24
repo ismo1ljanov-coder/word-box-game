@@ -1,27 +1,61 @@
-import { useState, useEffect, useRef } from "react";
-import { useGetQuizWords, useMarkWordProgress, useCreateGameSession, getGetQuizWordsQueryKey } from "@workspace/api-client-react";
-import type { GameSessionLevel } from "@workspace/api-client-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useGetQuizWords, useMarkWordProgress, useCreateGameSession, getGetQuizWordsQueryKey, useGetDueWords, getGetDueWordsQueryKey } from "@workspace/api-client-react";
+import type { GameSessionLevel, QuizQuestion } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy, RotateCcw, Brain, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSearch } from "wouter";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as GameSessionLevel[];
 
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function QuizGame() {
+  const searchStr = useSearch();
+  const params = new URLSearchParams(searchStr);
+  const isReviewMode = params.get("mode") === "review";
+
   const [level, setLevel] = useState<GameSessionLevel>("A1");
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(isReviewMode);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isFinished, setIsFinished] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data: questions, isLoading, isError, refetch } = useGetQuizWords(
+  const { data: quizQuestions, isLoading: isQuizLoading, isError: isQuizError, refetch: refetchQuiz } = useGetQuizWords(
     { level, count: 10 },
     { query: { enabled: false, queryKey: getGetQuizWordsQueryKey({ level, count: 10 }) } }
   );
+
+  const { data: dueData, isLoading: isDueLoading, isError: isDueError, refetch: refetchDue } = useGetDueWords(
+    { limit: 40 },
+    { query: { enabled: isReviewMode, queryKey: getGetDueWordsQueryKey({ limit: 40 }) } }
+  );
+
+  const reviewQuestions = useMemo<QuizQuestion[]>(() => {
+    if (!dueData?.items || dueData.items.length === 0) return [];
+    const items = dueData.items;
+    const allTranslations = items.map(w => w.translation);
+    return items.slice(0, 10).map(w => {
+      const distractors = shuffle(allTranslations.filter(t => t !== w.translation)).slice(0, 3);
+      const options = shuffle([w.translation, ...distractors]);
+      return { wordId: w.id, word: w.word, correctAnswer: w.translation, options };
+    });
+  }, [dueData]);
+
+  const questions = isReviewMode ? reviewQuestions : quizQuestions;
+  const isLoading = isReviewMode ? isDueLoading : isQuizLoading;
+  const isError = isReviewMode ? isDueError : isQuizError;
 
   const markProgress = useMarkWordProgress();
   const createSession = useCreateGameSession();
@@ -37,7 +71,11 @@ export default function QuizGame() {
     setScore(0);
     setSelectedAnswer(null);
     setIsFinished(false);
-    refetch();
+    if (isReviewMode) {
+      refetchDue();
+    } else {
+      refetchQuiz();
+    }
   };
 
   const handleAnswer = (answer: string) => {
@@ -59,7 +97,7 @@ export default function QuizGame() {
         setIsFinished(true);
         createSession.mutate({
           data: {
-            gameType: "quiz", level,
+            gameType: "quiz", level: isReviewMode ? "A1" : level,
             score: Math.round((newScore / questions.length) * 100),
             totalQuestions: questions.length,
             correctAnswers: newScore,
@@ -110,6 +148,19 @@ export default function QuizGame() {
     );
   }
 
+  if (questions.length === 0 && isReviewMode) {
+    return (
+      <div className="max-w-md mx-auto mt-20 text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
+        <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
+          <Brain className="w-12 h-12 text-green-500" />
+        </div>
+        <h2 className="text-3xl font-black">Ajoyib!</h2>
+        <p className="text-lg text-muted-foreground">Bugun takrorlanadigan so'zlar yo'q. Ertaga qaytib keling!</p>
+        <Button onClick={() => window.history.back()} className="rounded-xl h-12 px-8 font-bold">Orqaga</Button>
+      </div>
+    );
+  }
+
   if (isFinished) {
     const percentage = Math.round((score / questions.length) * 100);
     return (
@@ -142,6 +193,12 @@ export default function QuizGame() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 mt-10">
+      {isReviewMode && (
+        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2">
+          <Brain className="w-4 h-4 text-amber-500 shrink-0" />
+          <span className="text-sm font-bold text-amber-700 dark:text-amber-400">Takrorlash rejimi — {questions.length} ta so'z</span>
+        </div>
+      )}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" className="rounded-full shrink-0" onClick={() => { if (timerRef.current) clearTimeout(timerRef.current); setIsPlaying(false); }} data-testid="button-exit">
           <X className="w-5 h-5" />
