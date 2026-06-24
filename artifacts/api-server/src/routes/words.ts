@@ -471,6 +471,139 @@ router.post("/words/:wordId/progress", requireAuth, async (req, res) => {
   res.json(result);
 });
 
+router.post("/words/:wordId/learn", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
+  const userTier = req.user!.subscriptionTier;
+  const allowedLevels = TIER_LEVELS[userTier] ?? TIER_LEVELS.free;
+
+  const parsed = ToggleFavoriteParams.safeParse(req.params);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid params" });
+    return;
+  }
+
+  const { wordId } = parsed.data;
+
+  const [wordCheck] = await db
+    .select({ level: wordsTable.level })
+    .from(wordsTable)
+    .where(eq(wordsTable.id, wordId));
+
+  if (!wordCheck) {
+    res.status(404).json({ error: "So'z topilmadi" });
+    return;
+  }
+  if (!(allowedLevels as readonly string[]).includes(wordCheck.level)) {
+    res.status(403).json({ error: "Bu so'z sizning tarifingizda mavjud emas" });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(wordProgressTable)
+    .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)));
+
+  let result;
+
+  if (existing) {
+    const [updated] = await db
+      .update(wordProgressTable)
+      .set({ score: 100, learned: true, updatedAt: new Date() })
+      .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)))
+      .returning();
+    result = {
+      wordId: updated.wordId,
+      learned: updated.learned,
+      practiceCount: updated.practiceCount,
+      score: updated.score,
+      isFavorite: updated.isFavorite,
+      nextReviewAt: updated.nextReviewAt?.toISOString() ?? null,
+    };
+  } else {
+    const [created] = await db
+      .insert(wordProgressTable)
+      .values({ userId, wordId, learned: true, practiceCount: 1, score: 100, isFavorite: false })
+      .returning();
+    result = {
+      wordId: created.wordId,
+      learned: created.learned,
+      practiceCount: created.practiceCount,
+      score: created.score,
+      isFavorite: created.isFavorite,
+      nextReviewAt: created.nextReviewAt?.toISOString() ?? null,
+    };
+  }
+
+  logEvent(userId, "word_learned", { wordId, source: "dictionary" });
+  await recordActivity(userId);
+  await awardXp(userId, 10, 0);
+  await checkAndAwardAchievements(userId);
+
+  res.json(result);
+});
+
+router.post("/words/:wordId/unlearn", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
+
+  const parsed = ToggleFavoriteParams.safeParse(req.params);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid params" });
+    return;
+  }
+
+  const { wordId } = parsed.data;
+
+  const [wordCheck] = await db
+    .select({ id: wordsTable.id })
+    .from(wordsTable)
+    .where(eq(wordsTable.id, wordId));
+
+  if (!wordCheck) {
+    res.status(404).json({ error: "So'z topilmadi" });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(wordProgressTable)
+    .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)));
+
+  let result;
+
+  if (existing) {
+    const [updated] = await db
+      .update(wordProgressTable)
+      .set({ score: 0, learned: false, updatedAt: new Date() })
+      .where(and(eq(wordProgressTable.wordId, wordId), eq(wordProgressTable.userId, userId)))
+      .returning();
+    result = {
+      wordId: updated.wordId,
+      learned: updated.learned,
+      practiceCount: updated.practiceCount,
+      score: updated.score,
+      isFavorite: updated.isFavorite,
+      nextReviewAt: updated.nextReviewAt?.toISOString() ?? null,
+    };
+  } else {
+    const [created] = await db
+      .insert(wordProgressTable)
+      .values({ userId, wordId, learned: false, practiceCount: 0, score: 0, isFavorite: false })
+      .returning();
+    result = {
+      wordId: created.wordId,
+      learned: created.learned,
+      practiceCount: created.practiceCount,
+      score: created.score,
+      isFavorite: created.isFavorite,
+      nextReviewAt: created.nextReviewAt?.toISOString() ?? null,
+    };
+  }
+
+  logEvent(userId, "word_unlearned", { wordId, source: "dictionary" });
+
+  res.json(result);
+});
+
 router.post("/words/:wordId/favorite", requireAuth, async (req, res) => {
   const userId = req.user!.id;
   const userTier = req.user!.subscriptionTier;

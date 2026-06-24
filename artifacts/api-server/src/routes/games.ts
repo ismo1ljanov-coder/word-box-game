@@ -122,8 +122,10 @@ router.get("/games/daily-challenge", requireAuth, async (req, res) => {
     return;
   }
 
-  const allTranslations = await db.select({ translation: wordsTable.translation }).from(wordsTable);
-  const translationPool = allTranslations.map((w) => w.translation);
+  const allTranslations = await db.select({ word: wordsTable.word, translation: wordsTable.translation }).from(wordsTable);
+  const translationPool = allTranslations
+    .filter((w) => w.translation.toLowerCase() !== w.word.toLowerCase())
+    .map((w) => w.translation);
 
   const questions = words.map((word) => {
     const distractors: string[] = [];
@@ -182,8 +184,10 @@ router.get("/games/quiz", requireAuth, async (req, res) => {
     return;
   }
 
-  const allTranslations = await db.select({ translation: wordsTable.translation }).from(wordsTable);
-  const translationPool = allTranslations.map((w) => w.translation);
+  const allTranslations = await db.select({ word: wordsTable.word, translation: wordsTable.translation }).from(wordsTable);
+  const translationPool = allTranslations
+    .filter((w) => w.translation.toLowerCase() !== w.word.toLowerCase())
+    .map((w) => w.translation);
 
   const questions = allWords.map((word) => {
     const distractors: string[] = [];

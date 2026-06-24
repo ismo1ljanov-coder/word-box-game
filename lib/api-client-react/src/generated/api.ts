@@ -1125,6 +1125,146 @@ export const useToggleFavorite = <TError = ErrorType<unknown>,
       return useMutation(getToggleFavoriteMutationOptions(options));
     }
 
+export const getLearnWordUrl = (wordId: number,) => {
+
+
+
+
+  return `/api/words/${wordId}/learn`
+}
+
+/**
+ * @summary Immediately mark a word as learned (score=100, learned=true)
+ */
+export const learnWord = async (wordId: number, options?: RequestInit): Promise<WordProgress> => {
+
+  return customFetch<WordProgress>(getLearnWordUrl(wordId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getLearnWordMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof learnWord>>, TError,{wordId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof learnWord>>, TError,{wordId: number}, TContext> => {
+
+const mutationKey = ['learnWord'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof learnWord>>, {wordId: number}> = (props) => {
+          const {wordId} = props ?? {};
+
+          return  learnWord(wordId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LearnWordMutationResult = NonNullable<Awaited<ReturnType<typeof learnWord>>>
+
+    export type LearnWordMutationError = ErrorType<void>
+
+    /**
+ * @summary Immediately mark a word as learned (score=100, learned=true)
+ */
+export const useLearnWord = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof learnWord>>, TError,{wordId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof learnWord>>,
+        TError,
+        {wordId: number},
+        TContext
+      > => {
+      return useMutation(getLearnWordMutationOptions(options));
+    }
+
+export const getUnlearnWordUrl = (wordId: number,) => {
+
+
+
+
+  return `/api/words/${wordId}/unlearn`
+}
+
+/**
+ * @summary Reset a word back to unlearned (score=0, learned=false)
+ */
+export const unlearnWord = async (wordId: number, options?: RequestInit): Promise<WordProgress> => {
+
+  return customFetch<WordProgress>(getUnlearnWordUrl(wordId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUnlearnWordMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlearnWord>>, TError,{wordId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlearnWord>>, TError,{wordId: number}, TContext> => {
+
+const mutationKey = ['unlearnWord'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlearnWord>>, {wordId: number}> = (props) => {
+          const {wordId} = props ?? {};
+
+          return  unlearnWord(wordId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlearnWordMutationResult = NonNullable<Awaited<ReturnType<typeof unlearnWord>>>
+
+    export type UnlearnWordMutationError = ErrorType<void>
+
+    /**
+ * @summary Reset a word back to unlearned (score=0, learned=false)
+ */
+export const useUnlearnWord = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlearnWord>>, TError,{wordId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlearnWord>>,
+        TError,
+        {wordId: number},
+        TContext
+      > => {
+      return useMutation(getUnlearnWordMutationOptions(options));
+    }
+
 export const getGetUserProgressUrl = () => {
 
 

@@ -328,6 +328,48 @@ paths:
               schema:
                 $ref: "#/components/schemas/FavoriteToggleResult"
 
+  /words/{wordId}/learn:
+    post:
+      operationId: learnWord
+      tags: [words]
+      summary: Immediately mark a word as learned (score=100, learned=true)
+      parameters:
+        - name: wordId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WordProgress"
+        "404":
+          description: Word not found
+
+  /words/{wordId}/unlearn:
+    post:
+      operationId: unlearnWord
+      tags: [words]
+      summary: Reset a word back to unlearned (score=0, learned=false)
+      parameters:
+        - name: wordId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WordProgress"
+        "404":
+          description: Word not found
+
   /progress:
     get:
       operationId: getUserProgress

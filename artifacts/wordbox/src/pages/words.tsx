@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useListWords, useMarkWordProgress, useToggleFavorite } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useListWords, useLearnWord, useUnlearnWord, useToggleFavorite, getListWordsQueryKey } from "@workspace/api-client-react";
 import type { WordWithProgress, ListWordsLevel } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,8 +42,16 @@ export default function Words() {
   const total = wordListData?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  const markProgress = useMarkWordProgress();
+  const queryClient = useQueryClient();
+  const learnWord = useLearnWord();
+  const unlearnWord = useUnlearnWord();
   const toggleFavorite = useToggleFavorite();
+
+  const invalidateWords = () => {
+    queryClient.invalidateQueries({ queryKey: getListWordsQueryKey({ learnedOnly: true }) });
+    queryClient.invalidateQueries({ queryKey: getListWordsQueryKey({ learnedOnly: false }) });
+    queryClient.invalidateQueries({ queryKey: getListWordsQueryKey({}) });
+  };
 
   const handleSectionChange = (val: Section) => {
     setSection(val);
@@ -60,10 +69,11 @@ export default function Words() {
   };
 
   const handleMarkLearned = (wordId: number) => {
-    markProgress.mutate(
-      { wordId, data: { correct: true } },
+    learnWord.mutate(
+      { wordId },
       {
         onSuccess: () => {
+          invalidateWords();
           toast({ title: "Ajoyib! 🎉", description: "So'z yodlangan bo'limiga o'tkazildi." });
         },
       }
@@ -71,10 +81,11 @@ export default function Words() {
   };
 
   const handleRelearn = (wordId: number) => {
-    markProgress.mutate(
-      { wordId, data: { correct: false } },
+    unlearnWord.mutate(
+      { wordId },
       {
         onSuccess: () => {
+          invalidateWords();
           toast({ title: "Qayta o'rganishga qo'shildi", description: "So'z lug'atga qaytarildi." });
         },
       }

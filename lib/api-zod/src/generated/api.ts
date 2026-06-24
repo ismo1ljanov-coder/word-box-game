@@ -249,6 +249,40 @@ export const ToggleFavoriteResponse = zod.object({
 
 
 /**
+ * @summary Immediately mark a word as learned (score=100, learned=true)
+ */
+export const LearnWordParams = zod.object({
+  "wordId": zod.coerce.number()
+})
+
+export const LearnWordResponse = zod.object({
+  "wordId": zod.number(),
+  "learned": zod.boolean(),
+  "practiceCount": zod.number(),
+  "score": zod.number().describe('0-100 mastery score'),
+  "isFavorite": zod.boolean(),
+  "nextReviewAt": zod.string().nullish().describe('ISO timestamp when this word is next due for spaced repetition review')
+})
+
+
+/**
+ * @summary Reset a word back to unlearned (score=0, learned=false)
+ */
+export const UnlearnWordParams = zod.object({
+  "wordId": zod.coerce.number()
+})
+
+export const UnlearnWordResponse = zod.object({
+  "wordId": zod.number(),
+  "learned": zod.boolean(),
+  "practiceCount": zod.number(),
+  "score": zod.number().describe('0-100 mastery score'),
+  "isFavorite": zod.boolean(),
+  "nextReviewAt": zod.string().nullish().describe('ISO timestamp when this word is next due for spaced repetition review')
+})
+
+
+/**
  * @summary Get all word progress for the current user
  */
 export const GetUserProgressResponseItem = zod.object({
