@@ -19,7 +19,12 @@ router.get("/words", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid query params" });
     return;
   }
-  const { level, search, favoritesOnly, learnedOnly } = parsed.data;
+  const { level, search, favoritesOnly } = parsed.data;
+  // learnedOnly must be parsed manually — zod.coerce.boolean() maps "false" → true (JS Boolean coercion)
+  const learnedOnly =
+    req.query.learnedOnly === "true" ? true :
+    req.query.learnedOnly === "false" ? false :
+    undefined;
   const category = typeof req.query.category === "string" ? req.query.category : undefined;
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = Math.min(100, Math.max(10, Number(req.query.pageSize) || 50));
