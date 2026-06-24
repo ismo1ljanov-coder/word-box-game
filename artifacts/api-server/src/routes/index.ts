@@ -11,11 +11,13 @@ import leaderboardRouter from "./leaderboard";
 import dailyRewardRouter from "./daily-reward";
 import adminRouter from "./admin";
 import analyticsRouter from "./analytics";
+import stripeRouter from "./stripe";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(stripeRouter);
 router.use(wordsRouter);
 router.use(progressRouter);
 router.use(gamesRouter);
@@ -24,7 +26,7 @@ router.use(achievementsRouter);
 router.use(challengesRouter);
 router.use(leaderboardRouter);
 router.use(dailyRewardRouter);
-router.use(adminRouter);
 router.use(analyticsRouter);
+router.use(adminRouter);
 
 export default router;

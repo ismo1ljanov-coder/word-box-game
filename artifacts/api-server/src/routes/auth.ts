@@ -5,7 +5,7 @@ import { usersTable, passwordResetCodesTable } from "@workspace/db";
 import { eq, and, gt, sql } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "../lib/logger";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, requireAdmin } from "../middleware/auth";
 
 const router = Router();
 
@@ -310,22 +310,30 @@ router.patch("/profile/password", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-const subscriptionSchema = z.object({
+const adminSubscriptionSchema = z.object({
   tier: z.enum(["free", "premium", "pro"]),
+  userId: z.number().int().positive().optional(),
 });
 
-router.post("/auth/subscription", requireAuth, async (req, res) => {
-  const parsed = subscriptionSchema.safeParse(req.body);
+router.post("/auth/subscription", requireAdmin, async (req, res) => {
+  const parsed = adminSubscriptionSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Noto'g'ri tarif tanlandi" });
     return;
   }
 
+  const targetUserId = parsed.data.userId ?? req.user!.id;
+
   const [updated] = await db
     .update(usersTable)
     .set({ subscriptionTier: parsed.data.tier, updatedAt: new Date() })
-    .where(eq(usersTable.id, req.user!.id))
+    .where(eq(usersTable.id, targetUserId))
     .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "Foydalanuvchi topilmadi" });
+    return;
+  }
 
   res.json({
     id: updated.id,

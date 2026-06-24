@@ -23,6 +23,7 @@ import Stats from "@/pages/stats";
 import Profile from "@/pages/profile";
 import Favorites from "@/pages/favorites";
 import Premium from "@/pages/premium";
+import CheckoutSuccess from "@/pages/checkout-success";
 import Leaderboard from "@/pages/leaderboard";
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
@@ -209,6 +210,7 @@ function Router() {
               <Route path="/profile" component={Profile} />
               <Route path="/leaderboard" component={Leaderboard} />
               <Route path="/premium" component={Premium} />
+              <Route path="/checkout/success" component={CheckoutSuccess} />
               <Route component={NotFound} />
             </Switch>
           </AppLayout>

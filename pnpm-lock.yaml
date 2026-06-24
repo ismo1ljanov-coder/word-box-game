@@ -156,6 +156,13 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      stripe:
+        specifier: ^22.2.3
+        version: 22.2.3(@types/node@25.6.2)
+      stripe-replit-sync:
+        specifier: ^1.0.0
+        version: 1.0.0(stripe@22.2.3(@types/node@25.6.2))
     devDependencies:
       prettier:
         specifier: ^3.8.3
@@ -208,6 +215,12 @@ importers:
       pino-http:
         specifier: ^10.5.0
         version: 10.5.0
+      stripe:
+        specifier: '*'
+        version: 22.2.3(@types/node@25.6.2)
+      stripe-replit-sync:
+        specifier: '*'
+        version: 1.0.0(stripe@22.2.3(@types/node@25.6.2))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -668,6 +681,13 @@ importers:
         version: 0.31.10
 
   scripts:
+    dependencies:
+      stripe:
+        specifier: '*'
+        version: 22.2.3(@types/node@25.6.2)
+      stripe-replit-sync:
+        specifier: '*'
+        version: 1.0.0(stripe@22.2.3(@types/node@25.6.2))
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3596,6 +3616,11 @@ packages:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
     engines: {node: '>=4.0.0'}
 
+  pg-node-migrations@0.0.8:
+    resolution: {integrity: sha512-44cMl9umOmCv0hzZyEcvjEq8Bm8u7mrzggZ06qXTJVSsMMB4j2OsjG+rSp+uzeKWyP2Vu0K9Ye2wKtjFUJwrdw==}
+    engines: {node: '>10.17.0'}
+    hasBin: true
+
   pg-pool@3.13.0:
     resolution: {integrity: sha512-gB+R+Xud1gLFuRD/QgOIgGOBE2KCQPaPwkzBBGC9oG69pHTkhQeIuejVIk3/cnDyX39av2AxomQiyPT13WKHQA==}
     peerDependencies:
@@ -3638,7 +3663,7 @@ packages:
     resolution: {integrity: sha512-wlfUczU+n7Hy/Ha5j9a/gZNy7We5+cXp8YL+X+PG8S0KXxw7n/JXA3c46Y0zQznIJ83URJiwy7Lh56WLokNuxg==}
 
   pino-http@10.5.0:
-    resolution: {integrity: sha512-hD91XjgaKkSsdn8P7LaebrNzhGTdB086W3pyPihX0EzGPjq5uBJBXo4N5guqNaK6mUjg9aubMF7wDViYek9dRA==, tarball: https://registry.npmjs.org/pino-http/-/pino-http-10.5.0.tgz}
+    resolution: {integrity: sha512-hD91XjgaKkSsdn8P7LaebrNzhGTdB086W3pyPihX0EzGPjq5uBJBXo4N5guqNaK6mUjg9aubMF7wDViYek9dRA==}
 
   pino-pretty@13.1.3:
     resolution: {integrity: sha512-ttXRkkOz6WWC95KeY9+xxWL6AtImwbyMHrL1mSwqwW9u+vLp/WIElvHvCSDg0xO/Dzrggz1zv3rN5ovTRVowKg==}
@@ -4031,6 +4056,10 @@ packages:
     resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
     engines: {node: '>= 10.x'}
 
+  sql-template-strings@2.2.2:
+    resolution: {integrity: sha512-UXhXR2869FQaD+GMly8jAMCRZ94nU5KcrFetZfWEMd+LVVG6y0ExgHAhatEcKZ/wk8YcKPdi+hiD2wm75lq3/Q==}
+    engines: {node: '>=4.0.0'}
+
   statuses@2.0.2:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
     engines: {node: '>= 0.8'}
@@ -4078,6 +4107,20 @@ packages:
   strip-json-comments@5.0.3:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
+
+  stripe-replit-sync@1.0.0:
+    resolution: {integrity: sha512-Bkbih3k+IX/GugN8bKWNpwDiI2xkSLOAR+P34W7pjaR8fXyVay/QqztbrvbHZcU1JlfXncmBhuODY5TYY6DXlw==}
+    peerDependencies:
+      stripe: '> 11'
+
+  stripe@22.2.3:
+    resolution: {integrity: sha512-9lrggvLtjO4Ef5WXH4t50ckHJcJgTD72xFB+KJgZCSszAH9zMV1BqU6PwmWbRLdcdX7LK6PbErBapiGK7pIb+g==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/node': '>=18'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
@@ -4437,6 +4480,18 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  ws@8.21.0:
+    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
@@ -4448,6 +4503,9 @@ packages:
     resolution: {integrity: sha512-ml/JPOj9fOQK8RNnWojA67GbZ0ApXAUlN2UQclwv2eVgTgn7O9gg9o7paZWKMp4g0H3nTLtS9LVzhkpOFIKzog==}
     engines: {node: '>= 14.6'}
     hasBin: true
+
+  yesql@7.0.0:
+    resolution: {integrity: sha512-sosfr7agy4ibLM7BvXBkM6BpBmKMGuBO8DUYQEuey+QqaqrgW+2bsSg6D050ocBYIz0PuHxUyehyzEztZTU4pw==}
 
   yocto-queue@1.2.2:
     resolution: {integrity: sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ==}
@@ -7646,6 +7704,13 @@ snapshots:
 
   pg-int8@1.0.1: {}
 
+  pg-node-migrations@0.0.8:
+    dependencies:
+      pg: 8.20.0
+      sql-template-strings: 2.2.2
+    transitivePeerDependencies:
+      - pg-native
+
   pg-pool@3.13.0(pg@8.20.0):
     dependencies:
       pg: 8.20.0
@@ -8127,6 +8192,8 @@ snapshots:
 
   split2@4.2.0: {}
 
+  sql-template-strings@2.2.2: {}
+
   statuses@2.0.2: {}
 
   stop-iteration-iterator@1.1.0:
@@ -8191,6 +8258,22 @@ snapshots:
   strip-final-newline@4.0.0: {}
 
   strip-json-comments@5.0.3: {}
+
+  stripe-replit-sync@1.0.0(stripe@22.2.3(@types/node@25.6.2)):
+    dependencies:
+      pg: 8.20.0
+      pg-node-migrations: 0.0.8
+      stripe: 22.2.3(@types/node@25.6.2)
+      ws: 8.21.0
+      yesql: 7.0.0
+    transitivePeerDependencies:
+      - bufferutil
+      - pg-native
+      - utf-8-validate
+
+  stripe@22.2.3(@types/node@25.6.2):
+    optionalDependencies:
+      '@types/node': 25.6.2
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
@@ -8615,11 +8698,15 @@ snapshots:
 
   wrappy@1.0.2: {}
 
+  ws@8.21.0: {}
+
   xtend@4.0.2: {}
 
   yallist@3.1.1: {}
 
   yaml@2.8.4: {}
+
+  yesql@7.0.0: {}
 
   yocto-queue@1.2.2: {}
 

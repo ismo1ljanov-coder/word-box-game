@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Crown, Check, X, Zap, BookOpen, Gamepad2, BarChart3, Heart, Swords, Star,
-  Lock, Sparkles, Flame
+  Lock, Sparkles, Flame, Settings
 } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -78,34 +78,87 @@ const TIER_DETAILS: Record<Tier, {
 
 const TIER_ORDER: Tier[] = ["free", "premium", "pro"];
 
+interface StripePriceInfo {
+  priceId: string;
+  tier: string;
+  unitAmount: number;
+  currency: string;
+}
+
 export default function Premium() {
   const { user, refetchUser } = useAuth();
   const { toast } = useToast();
   const [subscribing, setSubscribing] = useState<Tier | null>(null);
+  const [prices, setPrices] = useState<StripePriceInfo[]>([]);
+  const [openingPortal, setOpeningPortal] = useState(false);
 
   const currentTier = user?.subscriptionTier ?? "free";
 
+  useEffect(() => {
+    fetch("/api/stripe/prices", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data?.data)) setPrices(data.data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const getPriceIdForTier = (tier: Tier): string | null => {
+    const match = prices.find((p) => p.tier === tier);
+    return match?.priceId ?? null;
+  };
+
   const handleSubscribe = async (tier: Tier) => {
     if (tier === currentTier) return;
+
+    if (tier === "free") {
+      setOpeningPortal(true);
+      try {
+        const res = await fetch("/api/stripe/portal", {
+          method: "POST",
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error ?? "Xatolik yuz berdi");
+        }
+        const { url } = await res.json();
+        window.location.href = url;
+      } catch (e) {
+        toast({
+          title: "Xatolik",
+          description: e instanceof Error ? e.message : "Qayta urinib ko'ring",
+          variant: "destructive",
+        });
+        setOpeningPortal(false);
+      }
+      return;
+    }
+
+    const priceId = getPriceIdForTier(tier);
+    if (!priceId) {
+      toast({
+        title: "Xatolik",
+        description: "Narx ma'lumotlari yuklanmadi. Sahifani yangilang.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubscribing(tier);
     try {
-      const res = await fetch("/api/auth/subscription", {
+      const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ priceId }),
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error ?? "Xatolik yuz berdi");
       }
-      await refetchUser();
-      toast({
-        title: `${TIER_DETAILS[tier].name} tarifi faollashtirildi! 🎉`,
-        description: tier === "pro"
-          ? "Barcha C1/C2 so'zlar va Pro o'yinlar mavjud."
-          : "B1/B2 so'zlar va Premium o'yinlar mavjud.",
-      });
+      const { url } = await res.json();
+      window.location.href = url;
     } catch (e) {
       toast({
         title: "Xatolik",
@@ -114,6 +167,29 @@ export default function Premium() {
       });
     } finally {
       setSubscribing(null);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setOpeningPortal(true);
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Xatolik yuz berdi");
+      }
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (e) {
+      toast({
+        title: "Xatolik",
+        description: e instanceof Error ? e.message : "Qayta urinib ko'ring",
+        variant: "destructive",
+      });
+      setOpeningPortal(false);
     }
   };
 
@@ -128,9 +204,21 @@ export default function Premium() {
           Ingliz tilini yanada tez va samarali o'rganing
         </p>
         {currentTier !== "free" && (
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-bold text-sm">
-            <Sparkles className="w-4 h-4" />
-            Hozirgi tarifingiz: {TIER_DETAILS[currentTier].name}
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-bold text-sm">
+              <Sparkles className="w-4 h-4" />
+              Hozirgi tarifingiz: {TIER_DETAILS[currentTier].name}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 rounded-xl font-semibold text-muted-foreground"
+              onClick={handleManageSubscription}
+              disabled={openingPortal}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              {openingPortal ? "Ochilmoqda..." : "Obunani boshqarish"}
+            </Button>
           </div>
         )}
       </header>
@@ -142,6 +230,8 @@ export default function Premium() {
           const isCurrent = currentTier === tier;
           const isUpgrade = TIER_ORDER.indexOf(tier) > TIER_ORDER.indexOf(currentTier);
           const isDowngrade = TIER_ORDER.indexOf(tier) < TIER_ORDER.indexOf(currentTier);
+          const priceId = getPriceIdForTier(tier);
+          const pricesLoaded = prices.length > 0;
 
           return (
             <Card
@@ -200,25 +290,25 @@ export default function Premium() {
                   <Button variant="outline" className="w-full rounded-xl font-bold" disabled>
                     Hozirgi tarif
                   </Button>
-                ) : isDowngrade ? (
+                ) : tier === "free" ? (
                   <Button
                     variant="outline"
                     className="w-full rounded-xl font-bold text-muted-foreground"
                     onClick={() => handleSubscribe(tier)}
-                    disabled={subscribing !== null}
+                    disabled={openingPortal || subscribing !== null}
                   >
-                    {subscribing === tier ? "O'zgartirilmoqda..." : "Pastroqqa o'tish"}
+                    {openingPortal ? "Ochilmoqda..." : "Bepulga tushish"}
                   </Button>
                 ) : (
                   <Button
                     className={`w-full rounded-xl font-bold ${plan.buttonGradient || ""}`}
                     onClick={() => handleSubscribe(tier)}
-                    disabled={subscribing !== null}
+                    disabled={subscribing !== null || openingPortal || (pricesLoaded && !priceId)}
                   >
                     {subscribing === tier ? (
                       <span className="flex items-center gap-2">
                         <span className="animate-spin">⟳</span>
-                        Faollashtirmoqda...
+                        Yo'naltirilmoqda...
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
@@ -238,20 +328,20 @@ export default function Premium() {
         <CardContent className="p-6 md:p-8">
           <h3 className="text-xl font-black mb-2 text-center">To'lov haqida</h3>
           <p className="text-muted-foreground text-center text-sm mb-6">
-            Hozircha to'lov tizimi ishlab chiqilmoqda. "Premium olish" tugmasi tarifni darhol faollashtiradi.
+            Xavfsiz va qulay to'lov Stripe orqali. Istalgan vaqt bekor qilishingiz mumkin.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
             <div className="flex items-start gap-3 p-3 rounded-xl bg-background/50">
               <Lock className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-              <span>Xavfsiz to'lov tizimi tez kunda</span>
+              <span>Stripe orqali xavfsiz to'lov</span>
             </div>
             <div className="flex items-start gap-3 p-3 rounded-xl bg-background/50">
               <Gamepad2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-              <span>Premium o'yinlarni sinab ko'ring</span>
+              <span>Istalgan vaqt bekor qilish</span>
             </div>
             <div className="flex items-start gap-3 p-3 rounded-xl bg-background/50">
               <BarChart3 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-              <span>Kengaytirilgan statistika va tahlil</span>
+              <span>To'lovdan so'ng darhol faollashadi</span>
             </div>
           </div>
         </CardContent>

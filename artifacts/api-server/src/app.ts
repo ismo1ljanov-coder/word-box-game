@@ -6,12 +6,12 @@ import pinoHttp from "pino-http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "@workspace/db";
-import router from "./routes";
-import { logger } from "./lib/logger";
+import router from "./routes/index.js";
+import { logger } from "./lib/logger.js";
+import { WebhookHandlers } from "./webhookHandlers.js";
 
 const app: Express = express();
 
-// Trust Replit's reverse proxy so secure cookies are set correctly over HTTPS
 app.set("trust proxy", 1);
 
 app.use(
@@ -47,6 +47,27 @@ const origin =
     : (true as const);
 
 app.use(cors({ origin, credentials: true }));
+
+app.post(
+  '/api/stripe/webhook',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const signature = req.headers['stripe-signature'];
+    if (!signature) {
+      res.status(400).json({ error: 'Missing stripe-signature' });
+      return;
+    }
+    const sig = Array.isArray(signature) ? signature[0] : signature;
+    try {
+      await WebhookHandlers.processWebhook(req.body as Buffer, sig);
+      res.status(200).json({ received: true });
+    } catch (err: any) {
+      logger.error({ err }, 'Stripe webhook error');
+      res.status(400).json({ error: 'Webhook processing error' });
+    }
+  }
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

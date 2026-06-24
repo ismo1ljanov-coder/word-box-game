@@ -2,3 +2,4 @@
 - [Zod subpath import](zod-import.md) — api-server must import from "zod" not "zod/v4"; both work at runtime but esbuild resolves "zod".
 - [Orval mutation signatures](orval-mutations.md) — Orval wraps body in `{ data: Body }` and path params use OpenAPI param name (e.g. `wordId`), not `id`.
 - [Session save pattern](session-save.md) — res.json must be inside req.session.save() callback or sessions 401 on next request.
+- [Stripe + stripe-replit-sync quirks](stripe-replit-setup.md) — credential key is `secret` not `secret_key`; runMigrations() doesn't create tables; admin router blocks routes after it.

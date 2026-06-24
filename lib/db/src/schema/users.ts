@@ -11,6 +11,8 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   isAdmin: boolean("is_admin").notNull().default(false),
   subscriptionTier: subscriptionTierEnum("subscription_tier").notNull().default("free"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   streakDays: integer("streak_days").notNull().default(0),
   longestStreak: integer("longest_streak").notNull().default(0),
   lastActivityDate: timestamp("last_activity_date"),
