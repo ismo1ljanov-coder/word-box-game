@@ -131,7 +131,8 @@ export const ListWordsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "page": zod.coerce.number().default(listWordsQueryPageDefault),
   "pageSize": zod.coerce.number().default(listWordsQueryPageSizeDefault),
-  "favoritesOnly": zod.coerce.boolean().optional()
+  "favoritesOnly": zod.coerce.boolean().optional(),
+  "learnedOnly": zod.coerce.boolean().optional()
 })
 
 export const ListWordsResponse = zod.object({

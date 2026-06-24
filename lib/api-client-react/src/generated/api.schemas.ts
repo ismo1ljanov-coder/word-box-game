@@ -544,6 +544,7 @@ search?: string;
 page?: number;
 pageSize?: number;
 favoritesOnly?: boolean;
+learnedOnly?: boolean;
 };
 
 export type ListWordsLevel = typeof ListWordsLevel[keyof typeof ListWordsLevel];

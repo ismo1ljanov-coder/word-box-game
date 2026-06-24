@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Volume2, CheckCircle2, Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Volume2, CheckCircle2, Heart, ChevronLeft, ChevronRight, BookOpen, GraduationCap, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,10 @@ import { cn } from "@/lib/utils";
 const LEVELS = ["Barchasi", "A1", "A2", "B1", "B2", "C1", "C2"];
 const PAGE_SIZE = 50;
 
+type Section = "lugat" | "yodlangan";
+
 export default function Words() {
+  const [section, setSection] = useState<Section>("lugat");
   const [activeTab, setActiveTab] = useState("Barchasi");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -23,9 +26,12 @@ export default function Words() {
   const levelParam = activeTab === "Barchasi" ? undefined : (activeTab as ListWordsLevel);
   const searchParam = searchQuery.trim() !== "" ? searchQuery : undefined;
 
+  const learnedOnly = section === "yodlangan" ? true : false;
+
   const { data, isLoading } = useListWords({
     level: levelParam,
     search: searchParam,
+    learnedOnly,
     page,
     pageSize: PAGE_SIZE,
   });
@@ -37,6 +43,11 @@ export default function Words() {
 
   const markProgress = useMarkWordProgress();
   const toggleFavorite = useToggleFavorite();
+
+  const handleSectionChange = (val: Section) => {
+    setSection(val);
+    setPage(1);
+  };
 
   const handleTabChange = (val: string) => {
     setActiveTab(val);
@@ -53,7 +64,18 @@ export default function Words() {
       { wordId, data: { correct: true } },
       {
         onSuccess: () => {
-          toast({ title: "Ajoyib!", description: "So'z o'rganilgan deb belgilandi." });
+          toast({ title: "Ajoyib! 🎉", description: "So'z yodlangan bo'limiga o'tkazildi." });
+        },
+      }
+    );
+  };
+
+  const handleRelearn = (wordId: number) => {
+    markProgress.mutate(
+      { wordId, data: { correct: false } },
+      {
+        onSuccess: () => {
+          toast({ title: "Qayta o'rganishga qo'shildi", description: "So'z lug'atga qaytarildi." });
         },
       }
     );
@@ -76,6 +98,50 @@ export default function Words() {
         <p className="text-muted-foreground mt-2 text-lg">Yangi so'zlarni o'rganing va takrorlang</p>
       </header>
 
+      {/* Section toggle */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => handleSectionChange("lugat")}
+          className={cn(
+            "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all",
+            section === "lugat"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <BookOpen className="w-4 h-4" />
+          Lug'at
+        </button>
+        <button
+          onClick={() => handleSectionChange("yodlangan")}
+          className={cn(
+            "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all",
+            section === "yodlangan"
+              ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <GraduationCap className="w-4 h-4" />
+          Yodlangan
+          {section === "yodlangan" && total > 0 && (
+            <span className="ml-1 bg-white/20 rounded-full px-2 py-0.5 text-xs">{total}</span>
+          )}
+        </button>
+      </div>
+
+      {/* Section description */}
+      {section === "lugat" && (
+        <p className="text-sm text-muted-foreground -mt-4">
+          O'rganilmagan so'zlar — "O'rgandim" tugmasini bosing, yodlangandan so'ng u alohida bo'limga o'tadi.
+        </p>
+      )}
+      {section === "yodlangan" && (
+        <p className="text-sm text-muted-foreground -mt-4">
+          Siz yodlagan so'zlar. Qayta mashq qilish uchun "Qaytarish" tugmasini bosing.
+        </p>
+      )}
+
+      {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full md:w-auto">
           <TabsList className="bg-muted/50 p-1 rounded-xl h-auto flex flex-wrap md:flex-nowrap">
@@ -108,6 +174,7 @@ export default function Words() {
         </div>
       )}
 
+      {/* Word cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {isLoading
           ? Array.from({ length: 9 }).map((_, i) => (
@@ -121,8 +188,21 @@ export default function Words() {
             ))
           : words.length === 0
           ? (
-            <div className="col-span-full py-12 text-center text-muted-foreground">
-              So'zlar topilmadi
+            <div className="col-span-full py-16 text-center">
+              {section === "yodlangan" ? (
+                <div className="space-y-3">
+                  <div className="text-5xl">🎓</div>
+                  <p className="text-muted-foreground font-medium">Hali yodlangan so'zlar yo'q</p>
+                  <p className="text-sm text-muted-foreground">
+                    Lug'atdagi so'zlarni o'rganib, "O'rgandim" tugmasini bosing
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-5xl">📚</div>
+                  <p className="text-muted-foreground font-medium">So'zlar topilmadi</p>
+                </div>
+              )}
             </div>
           )
           : words.map((word) => (
@@ -130,7 +210,7 @@ export default function Words() {
               key={word.id}
               className={cn(
                 "rounded-2xl border-border/50 hover-elevate transition-all group overflow-hidden flex flex-col h-full",
-                word.learned && "border-emerald-500/30 bg-emerald-500/5"
+                section === "yodlangan" && "border-emerald-500/30 bg-emerald-500/5"
               )}
             >
               <CardContent className="p-5 flex-1 flex flex-col">
@@ -143,9 +223,9 @@ export default function Words() {
                     <Badge variant="secondary" className="font-bold bg-secondary/10 text-secondary rounded-lg">
                       {word.level}
                     </Badge>
-                    {word.learned && (
+                    {section === "yodlangan" && (word.score ?? 0) > 0 && (
                       <Badge className="font-bold bg-emerald-500/20 text-emerald-600 rounded-lg border-0 text-xs">
-                        O'rganildi
+                        {word.score}%
                       </Badge>
                     )}
                   </div>
@@ -176,14 +256,26 @@ export default function Words() {
                     >
                       <Heart className={cn("w-4 h-4", word.isFavorite ? "fill-red-500" : "")} />
                     </Button>
-                    <Button
-                      variant="default"
-                      className="w-full rounded-xl font-bold bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground border-0"
-                      onClick={() => handleMarkLearned(word.id)}
-                    >
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      O'rgandim
-                    </Button>
+
+                    {section === "yodlangan" ? (
+                      <Button
+                        variant="outline"
+                        className="w-full rounded-xl font-bold text-muted-foreground hover:text-foreground"
+                        onClick={() => handleRelearn(word.id)}
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Qaytarish
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="default"
+                        className="w-full rounded-xl font-bold bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground border-0"
+                        onClick={() => handleMarkLearned(word.id)}
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        O'rgandim
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

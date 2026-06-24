@@ -19,7 +19,7 @@ router.get("/words", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid query params" });
     return;
   }
-  const { level, search, favoritesOnly } = parsed.data;
+  const { level, search, favoritesOnly, learnedOnly } = parsed.data;
   const category = typeof req.query.category === "string" ? req.query.category : undefined;
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = Math.min(100, Math.max(10, Number(req.query.pageSize) || 50));
@@ -52,6 +52,7 @@ router.get("/words", requireAuth, async (req, res) => {
   }
 
   if (favoritesOnly) {
+    const favWhere = and(whereClause, eq(wordProgressTable.isFavorite, true));
     const favorites = await db
       .select({
         id: wordsTable.id,
@@ -70,7 +71,7 @@ router.get("/words", requireAuth, async (req, res) => {
       })
       .from(wordsTable)
       .innerJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
-      .where(and(whereClause, eq(wordProgressTable.isFavorite, true)))
+      .where(favWhere)
       .orderBy(wordsTable.word)
       .limit(pageSize)
       .offset(offset);
@@ -79,7 +80,7 @@ router.get("/words", requireAuth, async (req, res) => {
       .select({ count: sql<number>`count(*)::int` })
       .from(wordsTable)
       .innerJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
-      .where(and(whereClause, eq(wordProgressTable.isFavorite, true)));
+      .where(favWhere);
 
     res.json({
       items: favorites.map((w) => ({ ...w, learned: w.learned ?? false, practiceCount: w.practiceCount ?? 0, score: w.score ?? 0, isFavorite: w.isFavorite ?? false })),
@@ -90,10 +91,72 @@ router.get("/words", requireAuth, async (req, res) => {
     return;
   }
 
-  const [totalResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(wordsTable)
-    .where(whereClause);
+  // learnedOnly=true  → only words the user has marked learned (inner join, learned=true)
+  // learnedOnly=false → only words not yet learned (left join, learned IS NULL or false)
+  // learnedOnly=undefined → all words (left join, no learned filter)
+  if (learnedOnly === true) {
+    const learnedWhere = and(whereClause, eq(wordProgressTable.learned, true));
+    const learnedWords = await db
+      .select({
+        id: wordsTable.id,
+        word: wordsTable.word,
+        translation: wordsTable.translation,
+        level: wordsTable.level,
+        category: wordsTable.category,
+        partOfSpeech: wordsTable.partOfSpeech,
+        exampleSentence: wordsTable.exampleSentence,
+        exampleTranslation: wordsTable.exampleTranslation,
+        phonetic: wordsTable.phonetic,
+        learned: wordProgressTable.learned,
+        practiceCount: wordProgressTable.practiceCount,
+        score: wordProgressTable.score,
+        isFavorite: wordProgressTable.isFavorite,
+      })
+      .from(wordsTable)
+      .innerJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
+      .where(learnedWhere)
+      .orderBy(wordsTable.level, wordsTable.word)
+      .limit(pageSize)
+      .offset(offset);
+
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wordsTable)
+      .innerJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
+      .where(learnedWhere);
+
+    res.json({
+      items: learnedWords.map((w) => ({ ...w, learned: true, practiceCount: w.practiceCount ?? 0, score: w.score ?? 0, isFavorite: w.isFavorite ?? false })),
+      total: totalResult.count,
+      page,
+      pageSize,
+    });
+    return;
+  }
+
+  // Default query (all words or unlearned-only when learnedOnly=false)
+  const unlearnedFilter = learnedOnly === false
+    ? sql`(${wordProgressTable.learned} IS NULL OR ${wordProgressTable.learned} = false)`
+    : undefined;
+
+  const finalWhere = unlearnedFilter ? and(whereClause, unlearnedFilter) : whereClause;
+
+  // For total count with unlearned filter we need the join
+  let total: number;
+  if (learnedOnly === false) {
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wordsTable)
+      .leftJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
+      .where(finalWhere);
+    total = totalResult.count;
+  } else {
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(wordsTable)
+      .where(whereClause);
+    total = totalResult.count;
+  }
 
   const words = await db
     .select({
@@ -113,7 +176,7 @@ router.get("/words", requireAuth, async (req, res) => {
     })
     .from(wordsTable)
     .leftJoin(wordProgressTable, and(eq(wordProgressTable.wordId, wordsTable.id), eq(wordProgressTable.userId, userId)))
-    .where(whereClause)
+    .where(finalWhere)
     .orderBy(wordsTable.level, wordsTable.word)
     .limit(pageSize)
     .offset(offset);
@@ -126,7 +189,7 @@ router.get("/words", requireAuth, async (req, res) => {
       score: w.score ?? 0,
       isFavorite: w.isFavorite ?? false,
     })),
-    total: totalResult.count,
+    total,
     page,
     pageSize,
   });

@@ -13,4 +13,5 @@ search?: string;
 page?: number;
 pageSize?: number;
 favoritesOnly?: boolean;
+learnedOnly?: boolean;
 };
