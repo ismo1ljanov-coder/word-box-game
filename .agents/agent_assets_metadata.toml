@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "x_JF2wv2gdDY_gefGeUf5"
+uri = "file://artifacts/wordbox-mobile/assets/images/icon.png"
+type = "image"
+title = "generated_image"
