@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const LEVELS = ["Barchasi", "A1", "A2", "B1", "B2", "C1", "C2"];
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 50;
 
 export default function Words() {
   const [activeTab, setActiveTab] = useState("Barchasi");
@@ -26,6 +26,8 @@ export default function Words() {
   const { data, isLoading } = useListWords({
     level: levelParam,
     search: searchParam,
+    page,
+    pageSize: PAGE_SIZE,
   });
 
   const wordListData = data as unknown as { items: WordWithProgress[]; total: number; page: number; pageSize: number } | undefined;
