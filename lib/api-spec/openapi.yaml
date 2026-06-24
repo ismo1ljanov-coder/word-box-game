@@ -309,6 +309,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/DueWordsResponse"
 
+  /words/review-schedule:
+    get:
+      operationId: getReviewSchedule
+      tags: [words]
+      summary: Get upcoming spaced repetition review schedule for the user
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: Upcoming review schedule grouped by date bucket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewScheduleResponse"
+
   /words/{wordId}/favorite:
     post:
       operationId: toggleFavorite
@@ -1123,6 +1142,33 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/WordWithProgress"
+        total:
+          type: integer
+
+    ReviewScheduleItem:
+      allOf:
+        - $ref: "#/components/schemas/WordWithProgress"
+        - type: object
+          required: [sm2Interval, sm2EaseFactor]
+          properties:
+            nextReviewAt:
+              type: ["string", "null"]
+              description: ISO timestamp for next scheduled review
+            sm2Interval:
+              type: integer
+              description: Current SM-2 interval in days
+            sm2EaseFactor:
+              type: number
+              description: SM-2 ease factor (higher = easier)
+
+    ReviewScheduleResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewScheduleItem"
         total:
           type: integer
 

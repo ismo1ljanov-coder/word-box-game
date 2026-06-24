@@ -146,6 +146,23 @@ export interface DueWordsResponse {
   total: number;
 }
 
+export type ReviewScheduleItem = WordWithProgress & ({
+  /**
+     * ISO timestamp for next scheduled review
+     * @nullable
+     */
+  nextReviewAt?: string | null;
+  /** Current SM-2 interval in days */
+  sm2Interval: number;
+  /** SM-2 ease factor (higher = easier) */
+  sm2EaseFactor: number;
+});
+
+export interface ReviewScheduleResponse {
+  items: ReviewScheduleItem[];
+  total: number;
+}
+
 export interface ProgressInput {
   correct: boolean;
   /** @nullable */
@@ -570,6 +587,10 @@ export const ListWordsLevel = {
 } as const;
 
 export type GetDueWordsParams = {
+limit?: number;
+};
+
+export type GetReviewScheduleParams = {
 limit?: number;
 };
 

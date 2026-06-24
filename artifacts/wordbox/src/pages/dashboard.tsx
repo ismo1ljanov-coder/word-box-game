@@ -186,8 +186,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Link href="/games/flashcard?mode=review">
-          <Card className={`rounded-2xl border-2 cursor-pointer hover-elevate transition-all ${dueCount > 0 ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-orange-500/5" : "border-border/50"}`}>
+          <Card className={`rounded-2xl border-2 transition-all ${dueCount > 0 ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-orange-500/5" : "border-border/50"}`}>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-bold flex items-center gap-2">
                 <Brain className={`w-5 h-5 ${dueCount > 0 ? "text-amber-500" : "text-muted-foreground"}`} />
@@ -198,18 +197,24 @@ export default function Dashboard() {
               {isDueLoading ? (
                 <Skeleton className="h-8 w-24" />
               ) : (
-                <div className="flex items-end gap-3">
-                  <div className={`text-4xl font-black ${dueCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
-                    {dueCount}
+                <div className="flex items-end justify-between gap-3">
+                  <div className="flex items-end gap-3">
+                    <div className={`text-4xl font-black ${dueCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
+                      {dueCount}
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-1">
+                      {dueCount === 0 ? "so'z tayyor" : "ta so'z kutmoqda"}
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground mb-1">
-                    {dueCount === 0 ? "so'z tayyor" : "ta so'z kutmoqda"}
-                  </div>
+                  <Link href="/review-schedule">
+                    <Button variant="ghost" size="sm" className="text-xs rounded-xl text-muted-foreground hover:text-foreground gap-1 mb-0.5">
+                      Jadval <ArrowRight className="w-3 h-3" />
+                    </Button>
+                  </Link>
                 </div>
               )}
             </CardContent>
           </Card>
-        </Link>
       </section>
 
       <section>

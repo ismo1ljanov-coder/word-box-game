@@ -236,6 +236,40 @@ export const GetDueWordsResponse = zod.object({
 
 
 /**
+ * @summary Get upcoming spaced repetition review schedule for the user
+ */
+export const getReviewScheduleQueryLimitDefault = 100;
+
+export const GetReviewScheduleQueryParams = zod.object({
+  "limit": zod.coerce.number().default(getReviewScheduleQueryLimitDefault)
+})
+
+export const GetReviewScheduleResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "word": zod.string(),
+  "translation": zod.string().describe('Uzbek translation'),
+  "level": zod.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
+  "category": zod.string(),
+  "partOfSpeech": zod.string().nullish(),
+  "exampleSentence": zod.string().nullish(),
+  "exampleTranslation": zod.string().nullish(),
+  "phonetic": zod.string().nullish()
+}).and(zod.object({
+  "learned": zod.boolean().optional(),
+  "practiceCount": zod.number().optional(),
+  "score": zod.number().optional(),
+  "isFavorite": zod.boolean().optional()
+})).and(zod.object({
+  "nextReviewAt": zod.string().nullish().describe('ISO timestamp for next scheduled review'),
+  "sm2Interval": zod.number().describe('Current SM-2 interval in days'),
+  "sm2EaseFactor": zod.number().describe('SM-2 ease factor (higher = easier)')
+}))),
+  "total": zod.number()
+})
+
+
+/**
  * @summary Toggle favorite status for a word
  */
 export const ToggleFavoriteParams = zod.object({

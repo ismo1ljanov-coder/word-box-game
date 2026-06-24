@@ -281,6 +281,80 @@ router.get("/words/due", requireAuth, async (req, res) => {
   });
 });
 
+router.get("/words/review-schedule", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
+  const userTier = req.user!.subscriptionTier;
+  const allowedLevels = TIER_LEVELS[userTier] ?? TIER_LEVELS.free;
+  const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 100));
+
+  const scheduleWords = await db
+    .select({
+      id: wordsTable.id,
+      word: wordsTable.word,
+      translation: wordsTable.translation,
+      level: wordsTable.level,
+      category: wordsTable.category,
+      partOfSpeech: wordsTable.partOfSpeech,
+      exampleSentence: wordsTable.exampleSentence,
+      exampleTranslation: wordsTable.exampleTranslation,
+      phonetic: wordsTable.phonetic,
+      learned: wordProgressTable.learned,
+      practiceCount: wordProgressTable.practiceCount,
+      score: wordProgressTable.score,
+      isFavorite: wordProgressTable.isFavorite,
+      nextReviewAt: wordProgressTable.nextReviewAt,
+      sm2Interval: wordProgressTable.sm2Interval,
+      sm2EaseFactor: wordProgressTable.sm2EaseFactor,
+    })
+    .from(wordsTable)
+    .innerJoin(
+      wordProgressTable,
+      and(
+        eq(wordProgressTable.wordId, wordsTable.id),
+        eq(wordProgressTable.userId, userId)
+      )
+    )
+    .where(
+      and(
+        inArray(wordsTable.level, allowedLevels),
+        gte(wordProgressTable.practiceCount, 1)
+      )
+    )
+    .orderBy(wordProgressTable.nextReviewAt)
+    .limit(limit);
+
+  const [totalResult] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(wordsTable)
+    .innerJoin(
+      wordProgressTable,
+      and(
+        eq(wordProgressTable.wordId, wordsTable.id),
+        eq(wordProgressTable.userId, userId)
+      )
+    )
+    .where(
+      and(
+        inArray(wordsTable.level, allowedLevels),
+        gte(wordProgressTable.practiceCount, 1)
+      )
+    );
+
+  res.json({
+    items: scheduleWords.map((w) => ({
+      ...w,
+      learned: w.learned ?? false,
+      practiceCount: w.practiceCount ?? 0,
+      score: w.score ?? 0,
+      isFavorite: w.isFavorite ?? false,
+      nextReviewAt: w.nextReviewAt?.toISOString() ?? null,
+      sm2Interval: w.sm2Interval ?? 1,
+      sm2EaseFactor: w.sm2EaseFactor ?? 2.5,
+    })),
+    total: totalResult.count,
+  });
+});
+
 router.get("/words/:wordId", requireAuth, async (req, res) => {
   const userId = req.user!.id;
   const userTier = req.user!.subscriptionTier;

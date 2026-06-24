@@ -25,6 +25,7 @@ import Favorites from "@/pages/favorites";
 import Premium from "@/pages/premium";
 import CheckoutSuccess from "@/pages/checkout-success";
 import Leaderboard from "@/pages/leaderboard";
+import ReviewSchedule from "@/pages/review-schedule";
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
 import ForgotPasswordPage from "@/pages/auth/forgot-password";
@@ -211,6 +212,7 @@ function Router() {
               <Route path="/leaderboard" component={Leaderboard} />
               <Route path="/premium" component={Premium} />
               <Route path="/checkout/success" component={CheckoutSuccess} />
+              <Route path="/review-schedule" component={ReviewSchedule} />
               <Route component={NotFound} />
             </Switch>
           </AppLayout>

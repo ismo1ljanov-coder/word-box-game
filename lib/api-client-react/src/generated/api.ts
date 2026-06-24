@@ -52,6 +52,7 @@ import type {
   GetCrosswordPuzzleParams,
   GetDueWordsParams,
   GetQuizWordsParams,
+  GetReviewScheduleParams,
   GrantAdminUserPremium200,
   HealthStatus,
   LeaderboardEntry,
@@ -68,6 +69,7 @@ import type {
   ResetAdminUserProgress200,
   ResetPassword200,
   ResetPasswordInput,
+  ReviewScheduleResponse,
   StatsSummary,
   UpdateProfileInput,
   Word,
@@ -1043,6 +1045,90 @@ export function useGetDueWords<TData = Awaited<ReturnType<typeof getDueWords>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDueWordsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetReviewScheduleUrl = (params?: GetReviewScheduleParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/words/review-schedule?${stringifiedParams}` : `/api/words/review-schedule`
+}
+
+/**
+ * @summary Get upcoming spaced repetition review schedule for the user
+ */
+export const getReviewSchedule = async (params?: GetReviewScheduleParams, options?: RequestInit): Promise<ReviewScheduleResponse> => {
+
+  return customFetch<ReviewScheduleResponse>(getGetReviewScheduleUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReviewScheduleQueryKey = (params?: GetReviewScheduleParams,) => {
+    return [
+    `/api/words/review-schedule`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetReviewScheduleQueryOptions = <TData = Awaited<ReturnType<typeof getReviewSchedule>>, TError = ErrorType<unknown>>(params?: GetReviewScheduleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReviewSchedule>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReviewScheduleQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReviewSchedule>>> = ({ signal }) => getReviewSchedule(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReviewSchedule>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetReviewScheduleQueryResult = NonNullable<Awaited<ReturnType<typeof getReviewSchedule>>>
+export type GetReviewScheduleQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get upcoming spaced repetition review schedule for the user
+ */
+
+export function useGetReviewSchedule<TData = Awaited<ReturnType<typeof getReviewSchedule>>, TError = ErrorType<unknown>>(
+ params?: GetReviewScheduleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReviewSchedule>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetReviewScheduleQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
