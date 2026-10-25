@@ -32,6 +32,12 @@ router.get("/games/sessions", requireAuth, async (req, res) => {
   );
 });
 
+// Mijoz yuboradigan natijalar uchun chegaralar (tanga/reyting aldashning oldini olish)
+const MAX_QUESTIONS_PER_SESSION = 100;
+const MAX_SCORE_PER_SESSION = 10_000;
+const MIN_SESSION_INTERVAL_MS = 5_000;
+const lastSessionAt = new Map<number, number>();
+
 router.post("/games/sessions", requireAuth, async (req, res) => {
   const userId = req.user!.id;
   const parsed = CreateGameSessionBody.safeParse(req.body);
@@ -39,6 +45,24 @@ router.post("/games/sessions", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid body" });
     return;
   }
+
+  const { totalQuestions, correctAnswers, score } = parsed.data;
+  if (
+    !Number.isInteger(totalQuestions) || !Number.isInteger(correctAnswers) ||
+    totalQuestions < 1 || totalQuestions > MAX_QUESTIONS_PER_SESSION ||
+    correctAnswers < 0 || correctAnswers > totalQuestions ||
+    !Number.isFinite(score) || score < 0 || score > MAX_SCORE_PER_SESSION
+  ) {
+    res.status(400).json({ error: "O'yin natijasi noto'g'ri" });
+    return;
+  }
+
+  const now = Date.now();
+  if (now - (lastSessionAt.get(userId) ?? 0) < MIN_SESSION_INTERVAL_MS) {
+    res.status(429).json({ error: "Juda tez. Biroz kuting" });
+    return;
+  }
+  lastSessionAt.set(userId, now);
 
   const userTier = req.user!.subscriptionTier;
   const gameType = parsed.data.gameType;

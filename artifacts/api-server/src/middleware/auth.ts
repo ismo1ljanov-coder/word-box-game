@@ -27,6 +27,14 @@ declare global {
   }
 }
 
+// To'lov tizimi o'chirilgan bo'lsa, hamma foydalanuvchi barcha kontentga ega (bepul ishga tushirish davri).
+// Yoqish uchun: PAYMENTS_ENABLED=true
+export const PAYMENTS_ENABLED = process.env.PAYMENTS_ENABLED === "true";
+
+export function effectiveTier<T extends string>(tier: T): T | "pro" {
+  return PAYMENTS_ENABLED ? tier : "pro";
+}
+
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const userId = req.session?.userId;
   if (!userId) {
@@ -47,7 +55,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return;
   }
 
-  req.user = user;
+  req.user = PAYMENTS_ENABLED ? user : { ...user, subscriptionTier: "pro" };
   touchLastActive(user.id);
   next();
 }

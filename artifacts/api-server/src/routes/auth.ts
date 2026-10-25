@@ -2,10 +2,10 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import { db } from "@workspace/db";
 import { usersTable, passwordResetCodesTable } from "@workspace/db";
-import { eq, and, gt, sql } from "drizzle-orm";
+import { eq, and, gt, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "../lib/logger";
-import { requireAuth, requireAdmin } from "../middleware/auth";
+import { requireAuth, requireAdmin, effectiveTier } from "../middleware/auth";
 
 const router = Router();
 
@@ -71,7 +71,7 @@ router.post("/auth/register", async (req, res) => {
       phone: user.phone,
       fullName: user.fullName,
       isAdmin: user.isAdmin,
-      subscriptionTier: user.subscriptionTier,
+      subscriptionTier: effectiveTier(user.subscriptionTier),
     });
   });
 });
@@ -121,7 +121,7 @@ router.post("/auth/login", async (req, res) => {
       phone: user.phone,
       fullName: user.fullName,
       isAdmin: user.isAdmin,
-      subscriptionTier: user.subscriptionTier,
+      subscriptionTier: effectiveTier(user.subscriptionTier),
     });
   });
 });
@@ -157,7 +157,7 @@ router.get("/auth/me", async (req, res) => {
     phone: user.phone,
     fullName: user.fullName,
     isAdmin: user.isAdmin,
-    subscriptionTier: user.subscriptionTier,
+    subscriptionTier: effectiveTier(user.subscriptionTier),
     totalCoins: user.totalCoins,
   });
 });
@@ -180,8 +180,12 @@ router.post("/auth/spend-coins", requireAuth, async (req, res) => {
   const [updated] = await db
     .update(usersTable)
     .set({ totalCoins: sql`${usersTable.totalCoins} - ${amount}` })
-    .where(eq(usersTable.id, userId))
+    .where(and(eq(usersTable.id, userId), gte(usersTable.totalCoins, amount)))
     .returning({ totalCoins: usersTable.totalCoins });
+  if (!updated) {
+    res.status(400).json({ error: "Tangalar yetarli emas" });
+    return;
+  }
   res.json({ totalCoins: updated.totalCoins });
 });
 

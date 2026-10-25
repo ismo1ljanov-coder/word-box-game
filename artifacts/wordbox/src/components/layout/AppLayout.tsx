@@ -5,6 +5,7 @@ import { useGetStatsSummary } from "@workspace/api-client-react";
 import DailyRewardModal from "@/components/DailyRewardModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
+import { PAYMENTS_ENABLED } from "@/lib/features";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -110,6 +111,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <span>Sevimlilar</span>
             </div>
           </Link>
+          {PAYMENTS_ENABLED && (
           <Link href="/premium">
             <div className={cn(
               "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm",
@@ -121,6 +123,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <span>Premium</span>
             </div>
           </Link>
+          )}
         </div>
       </nav>
 

@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/useTheme";
+import { PAYMENTS_ENABLED } from "@/lib/features";
 
 const BADGE_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string }> = {
   master: { label: "Master", emoji: "🏅", color: "text-amber-700", bg: "bg-amber-100 dark:bg-amber-900/30" },
@@ -262,13 +263,13 @@ export default function Profile() {
                 </div>
               </div>
             </div>
-            <Button
+            {PAYMENTS_ENABLED && <Button
               variant="outline"
               className="rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 hover:opacity-90"
             >
               <Crown className="mr-2 w-4 h-4" />
               {user?.subscriptionTier === "free" ? "Premium" : "Premium ✓"}
-            </Button>
+            </Button>}
           </div>
         </CardContent>
       </Card>

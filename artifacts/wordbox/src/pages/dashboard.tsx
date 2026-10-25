@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import { Trophy, Flame, Target, BookOpen, ArrowRight, Star, Zap, Heart, Brain, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PAYMENTS_ENABLED } from "@/lib/features";
 
 const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   A1: { bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-500/20" },
@@ -278,7 +279,9 @@ export default function Dashboard() {
             { href: "/words", icon: "📚", label: "Lug'at", desc: "So'zlarni ko'rish", color: "from-blue-500/10 to-blue-600/5" },
             { href: "/favorites", icon: "❤️", label: "Sevimlilar", desc: `${stats?.favoriteWords ?? 0} ta so'z`, color: "from-red-500/10 to-rose-600/5" },
             { href: "/games/quiz", icon: "🧠", label: "Test", desc: "Bilimni sinash", color: "from-purple-500/10 to-violet-600/5" },
-            { href: "/premium", icon: "👑", label: "Premium", desc: "Kengaytirilgan", color: "from-yellow-500/10 to-orange-500/5" },
+            PAYMENTS_ENABLED
+              ? { href: "/premium", icon: "👑", label: "Premium", desc: "Kengaytirilgan", color: "from-yellow-500/10 to-orange-500/5" }
+              : { href: "/games", icon: "🎮", label: "O'yinlar", desc: "8 ta o'yin", color: "from-yellow-500/10 to-orange-500/5" },
           ].map((item) => (
             <Link key={item.href} href={item.href}>
               <Card className={`rounded-xl cursor-pointer hover-elevate transition-all bg-gradient-to-br ${item.color} border-transparent`}>
